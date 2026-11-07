@@ -126,3 +126,34 @@ Implemented as two theme tokens (`design` × `palette`) — CSS variables + layo
 | **3 · צפחה וטורקיז** | #1E2A32 | #0B6A73 | #0B6A73 | #F5F7F8 |
 
 Semantic colors (קבע blue, חובה amber, אזרח purple, yes green, vacant red) stay the same in all palettes so meaning never changes with the theme. All text/background pairs target WCAG AA (4.5:1).
+
+---
+
+## 9. Revision 3 — decisions and new features
+
+### 9.1 Decisions
+- **Design: ג׳ · דחוס** (narrow icon rail, square corners, 36–40px rows, zebra stripes) with **palette 1 · כחול צי וענבר**, applied to every desktop view (כוח אדם, תקנים, מענקים ותמריצים, סימולטור). The other design/palette options are kept only as theme tokens.
+- All assumptions in §8.1 are confirmed (רס"ר once; civilians below uniformed personnel; אע"ב above אע"צ).
+
+### 9.2 New personnel field: תוכנית (program, optional)
+| Type | Allowed values |
+|---|---|
+| חייל | מט"ל |
+| קצין (חובה או קבע) | עתודה, אקדמזיציה, פיון, תלפיות, פסגות |
+| נגד / אזרח | not applicable |
+
+Column in the table after דרגה; filterable (including "ללא"), sortable, editable inline, part of the add form. Changing the type clears a program that is no longer valid.
+
+### 9.3 New view: מענקים ותמריצים (grants & incentives)
+Data model:
+```
+Grant   id, personId, type (VOUCHER שובר | GRANT מענק | INCENTIVE תמריץ),
+        signingMonths? (משך חתימה, optional), signingStart?, signingEnd?,
+        amount (₪), amountBasis (GROSS ברוטו | NET נטו), enteredAt, enteredBy
+```
+- **List**: one row per person who has at least one grant — name, מ.א, degree, section, number of records, latest grant (type, amount, date) and totals split into gross / net.
+- **Dropdown per person** (▾ at the row start) opens the grant history, **latest first** (by signing start, or entry date when there is no signing period); the newest one is marked "אחרון".
+- Search (name / מ.א), filters (type, gross/net, section), sort (name, count, latest, total), expand / collapse all.
+- **Add grant** = floating dialog: person, type, signing duration in months (optional), signing start and end, amount, gross/net. When duration and start are given, the end date is filled in automatically (still editable). Validation: person and positive amount required, start required when a duration is set, end after start.
+- Totals never mix gross and net amounts.
+- Production: amounts and grants are sensitive — visible only to authorized roles, every change written to the audit log.
