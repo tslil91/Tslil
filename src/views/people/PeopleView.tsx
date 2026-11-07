@@ -10,8 +10,11 @@ import { occupantOf, useStore } from '../../store/store';
 import { ImportDialog } from '../../components/ImportDialog';
 import { downloadWorkbook } from '../../io/excel';
 import { peopleSheet, planPeopleImport } from '../../logic/sheets';
+import { DateFilterDialog } from '../../components/DateFilterDialog';
+import { describeDateFilter } from '../../domain/dates';
 import { AddPersonDialog } from './AddPersonDialog';
 import { SectionsDialog } from './SectionsDialog';
+import { OverviewDialog } from './OverviewDialog';
 import { MoveDialog } from './MoveDialog';
 import { CellView, FieldEditor, patchDraft, toDraft } from './PersonCells';
 import { PeopleTree } from './PeopleTree';
@@ -36,6 +39,8 @@ export function PeopleView() {
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [managing, setManaging] = useState(false);
+  const [overview, setOverview] = useState(false);
+  const [dateFilterFor, setDateFilterFor] = useState<FieldDef | null>(null);
 
   const rows: PersonRow[] = useMemo(() => {
     const map = billetByPerson(s.assignments);
@@ -77,6 +82,7 @@ export function PeopleView() {
           ))}
         </div>
         <SearchBox value={query} onChange={setQuery} placeholder="חיפוש לפי שם או מ.א" />
+        <button type="button" className="btn" onClick={() => setOverview(true)}>תמונת מצב</button>
         <button type="button" className="btn" title="ייצוא האנשים המוצגים (לפי הסינון) לקובץ Excel"
           onClick={() => { void downloadWorkbook(`כוח-אדם-${today}`, [peopleSheet(groups.flatMap((g) => g.rows), s.sections, s.commanders)]); }}>ייצוא ל־Excel</button>
         <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
@@ -119,7 +125,7 @@ export function PeopleView() {
                   <SortButton label="שם" arrow={arrow('name')} onClick={() => toggleSort('name')} />
                   <span className="h-[30px]" />
                 </div>
-                {visible.map((f) => <HeaderCell key={f.key} f={f} arrow={arrow(f.key)} onSort={() => toggleSort(f.key)} value={filters[f.key] ?? ''} onFilter={(v) => setFilter(f.key, v)} />)}
+                {visible.map((f) => <HeaderCell key={f.key} f={f} arrow={arrow(f.key)} onSort={() => toggleSort(f.key)} value={filters[f.key] ?? ''} onFilter={(v) => setFilter(f.key, v)} onDateFilter={() => setDateFilterFor(f)} />)}
               </div>
 
               {groups.length === 0 && <p className="p-10 text-center text-[15px] text-muted">לא נמצאו אנשים התואמים לסינון.</p>}
@@ -191,6 +197,22 @@ export function PeopleView() {
       {moving && <MoveDialog person={moving} onClose={() => setMoving(null)} />}
       {adding && <AddPersonDialog onClose={() => setAdding(false)} />}
       {managing && <SectionsDialog onClose={() => setManaging(false)} />}
+      {overview && (
+        <OverviewDialog
+          people={s.people} billets={s.billets} assignments={s.assignments} today={today}
+          onShowInTable={(f, message) => { setFilters(f); setQuery(''); setView('table'); setOverview(false); s.showToast(message); }}
+          onClose={() => setOverview(false)}
+        />
+      )}
+      {dateFilterFor && (
+        <DateFilterDialog
+          title={dateFilterFor.label}
+          value={filters[dateFilterFor.key] ?? ''}
+          years={yearsIn(rows, dateFilterFor.key)}
+          onApply={(v) => setFilter(dateFilterFor.key, v)}
+          onClose={() => setDateFilterFor(null)}
+        />
+      )}
       {importing && (
         <ImportDialog
           title="ייבוא כוח אדם מ־Excel"
@@ -216,12 +238,26 @@ function SortButton({ label, arrow, onClick }: { label: string; arrow: string; o
   );
 }
 
-function HeaderCell({ f, arrow, onSort, value, onFilter }: { f: FieldDef; arrow: string; onSort: () => void; value: string; onFilter: (v: string) => void }) {
+/** Distinct years found in a date column, newest first. */
+function yearsIn(rows: PersonRow[], key: FieldKey): number[] {
+  const set = new Set<number>();
+  for (const r of rows) { const v = (r as unknown as Record<string, unknown>)[key]; if (typeof v === 'string' && /^\d{4}-/.test(v)) set.add(Number(v.slice(0, 4))); }
+  return [...set].sort((a, b) => b - a);
+}
+
+function HeaderCell({ f, arrow, onSort, value, onFilter, onDateFilter }: { f: FieldDef; arrow: string; onSort: () => void; value: string; onFilter: (v: string) => void; onDateFilter: () => void }) {
   const options = filterOptions(f);
+  const active = f.type === 'date' ? describeDateFilter(value) : '';
   return (
     <div className="flex min-w-0 flex-col gap-1 px-2 py-1.5">
       <SortButton label={f.label} arrow={arrow} onClick={onSort} />
-      {options.length > 0 ? (
+      {f.type === 'date' ? (
+        <button type="button" onClick={onDateFilter} aria-label={`סינון ${f.label}${active ? `: ${active}` : ''}`} title={active || 'סינון לפי שנה, חודש או בין תאריכים'}
+          className={`input flex items-center justify-between gap-1 text-start ${active ? 'border-accent bg-[#fff6ee] font-semibold text-accent' : ''}`}>
+          <span className="truncate">{active || 'הכל'}</span>
+          <span aria-hidden="true" className="text-[10px]">▾</span>
+        </button>
+      ) : options.length > 0 ? (
         <select className="input" aria-label={`סינון ${f.label}`} value={value} onChange={(e) => onFilter(e.target.value)}>
           <option value="">הכל</option>
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}

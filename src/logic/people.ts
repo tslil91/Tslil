@@ -1,4 +1,4 @@
-import { inDateBucket, type DateBucket } from '../domain/dates';
+import { matchDateFilter } from '../domain/dates';
 import { applicable, degreeIndex } from '../domain/rules';
 import type { Billet, Commanders, ISODate, Person, PersonRow, Section, SectionId } from '../domain/types';
 import { FIELDS, type FieldDef, type FieldKey } from './fields';
@@ -27,7 +27,7 @@ export function matchesFilters(row: PersonRow, filters: Filters, query: string, 
   return (Object.entries(filters) as [FieldKey | 'section', string][]).every(([key, want]) => {
     if (!want) return true;
     const f = fieldByKey.get(key);
-    if (f?.type === 'date') return applicable(key, row) && inDateBucket(row[key as FieldKey] as string | null, want as DateBucket, today);
+    if (f?.type === 'date') return applicable(key, row) && matchDateFilter(row[key as FieldKey] as string | null, want, today);
     return filterValue(row, key) === want;
   });
 }
