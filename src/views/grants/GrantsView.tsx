@@ -72,7 +72,7 @@ export function GrantsView() {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <PageHeader title="מענקים ותמריצים" subtitle={`${rows.length} אנשים · ${allShown.length} רשומות · ${totalText(allShown)}`}>
         <SearchBox value={query} onChange={setQuery} placeholder="חיפוש לפי שם או מ.א" />
-        <button type="button" className="btn" title="ייצוא הרשומות המוצגות (לפי הסינון)" onClick={() => { void downloadWorkbook(`מענקים-${todayISO()}`, [grantsSheet(allShown, s.people, s.sections)]); }}>ייצוא ל־Excel</button>
+        <button type="button" className="btn" title="ייצוא הרשומות המוצגות (לפי הסינון)" onClick={() => { void downloadWorkbook(`grants-${todayISO()}`, [grantsSheet(allShown, s.people, s.sections)]); }}>ייצוא ל־Excel</button>
         <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
         <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}><IconPlus size={16} />הוספת מענק</button>
       </PageHeader>
@@ -182,7 +182,7 @@ export function GrantsView() {
           plan={(t) => planGrantImport(t, s.grants, s.people, todayISO())}
           apply={(pl) => { s.importGrants([...pl.creates, ...pl.updates]); s.showToast(`יובאו ${pl.creates.length} רשומות חדשות ו־${pl.updates.length} עדכונים`); }}
           template={() => [grantsSheet(latestFirst(s.grants), s.people, s.sections)]}
-          templateFile={`מענקים-${todayISO()}`}
+          templateFile={`grants-${todayISO()}`}
           onClose={() => setImporting(false)}
         />
       )}

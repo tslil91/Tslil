@@ -65,7 +65,7 @@ export function BilletsView() {
       <PageHeader title="תקנים" subtitle={`${shown.length} מתוך ${s.billets.length} תקנים · ${filledCount} מאוישים`}>
         <SearchBox value={query} onChange={setQuery} placeholder="שאילתה: מספר תקן או שם משובץ (גם בעבר)" width={340} />
         {hasFilters && <button type="button" className="btn" onClick={() => { setF({}); setQuery(''); }}>נקה סינון</button>}
-        <button type="button" className="btn" title="ייצוא התקנים המוצגים והיסטוריית השיבוץ שלהם" onClick={() => { void downloadWorkbook(`תקנים-${todayISO()}`, sheets(shown)); }}>ייצוא ל־Excel</button>
+        <button type="button" className="btn" title="ייצוא התקנים המוצגים והיסטוריית השיבוץ שלהם" onClick={() => { void downloadWorkbook(`billets-${todayISO()}`, sheets(shown)); }}>ייצוא ל־Excel</button>
         <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
         <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}><IconPlus size={16} />הוספת תקן</button>
       </PageHeader>
@@ -152,7 +152,7 @@ export function BilletsView() {
           plan={(t) => planBilletImport(t, s.billets)}
           apply={(pl) => { s.importBillets([...pl.creates, ...pl.updates]); s.showToast(`יובאו ${pl.creates.length} תקנים חדשים ו־${pl.updates.length} עדכונים`); }}
           template={() => sheets(s.billets)}
-          templateFile={`תקנים-${todayISO()}`}
+          templateFile={`billets-${todayISO()}`}
           onClose={() => setImporting(false)}
         />
       )}

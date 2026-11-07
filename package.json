@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
+    "test": "vitest run",
+    "build:server": "node scripts/package.mjs --dev",
+    "server": "npm run build:server && DATA_DIR=${DATA_DIR:-./data} PUBLIC_DIR=${PUBLIC_DIR:-./dist} node build/server.mjs",
+    "package": "npm run typecheck && node scripts/package.mjs"
   },
   "dependencies": {
     "@fontsource/heebo": "5.3.0",

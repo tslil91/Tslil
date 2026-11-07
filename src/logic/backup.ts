@@ -25,7 +25,7 @@ export function makeBackup(data: AppData, createdAt: string = new Date().toISOSt
   return { format: BACKUP_FORMAT, version: BACKUP_VERSION, createdAt, counts: counts(data), data };
 }
 
-export const backupFileName = (today: string = todayISO()) => `גיבוי-כוח-אדם-${today}.json`;
+export const backupFileName = (today: string = todayISO()) => `personnel-backup-${today}.json`;
 
 export interface ParseResult { ok: boolean; data?: AppData; counts?: ReturnType<typeof counts>; createdAt?: string; errors: string[] }
 

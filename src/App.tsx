@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Rail, type Route } from './components/Rail';
+import { SyncBanner } from './components/SyncBanner';
 import { Toast } from './components/Toast';
 import { BilletsView } from './views/billets/BilletsView';
 import { GrantsView } from './views/grants/GrantsView';
@@ -30,6 +31,7 @@ export default function App() {
     <div dir="rtl" className="flex h-full min-w-[1024px] overflow-hidden bg-bg">
       <Rail current={route} />
       <main className="flex min-w-0 flex-1 flex-col">
+        <SyncBanner />
         {route === 'people' && <PeopleView />}
         {route === 'billets' && <BilletsView />}
         {route === 'grants' && <GrantsView />}

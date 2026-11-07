@@ -92,7 +92,7 @@ export function PeopleView() {
         </div>
         <SearchBox value={query} onChange={setQuery} placeholder="חיפוש לפי שם או מ.א" />
         <button type="button" className="btn" title="ייצוא האנשים המוצגים (לפי הסינון) לקובץ Excel"
-          onClick={() => { void downloadWorkbook(`כוח-אדם-${today}`, [peopleSheet(groups.flatMap((g) => g.rows), s.sections, s.commanders)]); }}>ייצוא ל־Excel</button>
+          onClick={() => { void downloadWorkbook(`personnel-${today}`, [peopleSheet(groups.flatMap((g) => g.rows), s.sections, s.commanders)]); }}>ייצוא ל־Excel</button>
         <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
         <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}><IconPlus size={16} />הוספת איש צוות</button>
       </PageHeader>
@@ -223,7 +223,7 @@ export function PeopleView() {
           plan={(t) => planPeopleImport(t, { people: s.people, billets: s.billets, billetOf: billetByPerson(s.assignments), sections: s.sections, commanders: s.commanders })}
           apply={(pl) => { s.importPeople([...pl.creates, ...pl.updates]); s.showToast(`יובאו ${pl.creates.length} חדשים ו־${pl.updates.length} עדכונים`); }}
           template={() => [peopleSheet(rows, s.sections, s.commanders)]}
-          templateFile={`כוח-אדם-${today}`}
+          templateFile={`personnel-${today}`}
           onClose={() => setImporting(false)}
         />
       )}
