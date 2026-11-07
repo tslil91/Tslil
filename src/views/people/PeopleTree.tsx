@@ -1,6 +1,7 @@
 import { IconMove } from '../../components/Icons';
 import { POP_LABELS, RANK_LABELS, degreeIndex } from '../../domain/rules';
 import type { Person } from '../../domain/types';
+import { personHref } from '../../nav';
 import { useStore } from '../../store/store';
 
 function MoveButton({ person, onMove }: { person: Person; onMove: (p: Person) => void }) {
@@ -33,7 +34,7 @@ export function PeopleTree({ people, onMove }: { people: Person[]; onMove: (p: P
       <div className="flex flex-col items-center">
         <div className="flex min-w-[280px] flex-col items-center gap-1 rounded border-2 border-primary px-4 py-3">
           <span className="label">מפקד הארגון</span>
-          <span className="text-[17px] font-bold">{top ? top.name : 'לא מונה'}</span>
+          {top ? <a href={personHref(top.id)} className="text-[17px] font-bold text-ink no-underline hover:underline">{top.name}</a> : <span className="text-[17px] font-bold">לא מונה</span>}
           <span className="text-[13px] text-muted">{top ? `${top.degree} · ${RANK_LABELS[top.rank]}` : 'יש למנות מפקד ארגון'}</span>
           {top && <button type="button" className="btn mt-1 h-7" onClick={() => onMove(top)}>שינוי מיקום</button>}
         </div>
@@ -52,7 +53,7 @@ export function PeopleTree({ people, onMove }: { people: Person[]; onMove: (p: P
               <div className="flex items-center gap-2 rounded border-2 border-primary bg-surface px-2.5 py-2">
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="label">מפקד המדור</span>
-                  <span className="text-sm font-bold">{col.commander.name}</span>
+                  <a href={personHref(col.commander.id)} className="text-sm font-bold text-ink no-underline hover:underline">{col.commander.name}</a>
                   <span className="text-xs text-muted">{col.commander.degree} · {RANK_LABELS[col.commander.rank]}</span>
                 </span>
                 <MoveButton person={col.commander} onMove={onMove} />
@@ -64,7 +65,7 @@ export function PeopleTree({ people, onMove }: { people: Person[]; onMove: (p: P
               {col.members.map((m) => (
                 <li key={m.id} className="flex items-center gap-2 rounded border border-line bg-surface px-2.5 py-1.5">
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-[13px] font-semibold">{m.name}</span>
+                    <a href={personHref(m.id)} className="text-[13px] font-semibold text-ink no-underline hover:underline">{m.name}</a>
                     <span className="text-xs text-muted">{m.degree} · {RANK_LABELS[m.rank]}</span>
                   </span>
                   <span className={`chip chip-${m.pop}`}>{POP_LABELS[m.pop]}</span>

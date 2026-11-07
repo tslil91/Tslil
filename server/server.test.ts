@@ -6,7 +6,7 @@ import type http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyData } from '../src/domain/data';
 import { seedData } from '../src/store/seed';
-import { DataStore, LockError } from './datastore';
+import { DataStore, LockError, processAlive } from './datastore';
 import { createApp } from './http';
 
 let dir: string;
@@ -199,6 +199,22 @@ describe('single writer lock (shared NFS safety)', () => {
     // a fresh lock is respected
     t += 1000;
     expect(() => DataStore.open({ dataDir: dir, log: quiet, now: () => t, staleLockMs: 120_000 })).toThrow(LockError);
+  });
+  it('processAlive: this process is alive, a made-up id is not', () => {
+    expect(processAlive(process.pid)).toBe(true);
+    expect(processAlive(2 ** 22 - 3)).toBe(false);
+  });
+  it('a lock left by a dead process on this machine is taken over immediately (automatic restart after a crash)', () => {
+    const lock = path.join(dir, 'server.lock');
+    fs.writeFileSync(lock, JSON.stringify({ id: 'crashed', pid: 2 ** 22 - 3, host: os.hostname() })); // fresh mtime, but no such process
+    expect(() => open()).not.toThrow();
+  });
+  it('a fresh lock from another machine, or from a live process here, is respected', () => {
+    const lock = path.join(dir, 'server.lock');
+    fs.writeFileSync(lock, JSON.stringify({ id: 'other-host', pid: 1234, host: 'some-other-machine' }));
+    expect(() => DataStore.open({ dataDir: dir, log: quiet })).toThrow(/some-other-machine/);
+    fs.writeFileSync(lock, JSON.stringify({ id: 'alive', pid: process.pid, host: os.hostname() }));
+    expect(() => DataStore.open({ dataDir: dir, log: quiet })).toThrow(LockError);
   });
   it('FORCE_UNLOCK takes over a live-looking lock', () => {
     open();

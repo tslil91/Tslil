@@ -75,6 +75,16 @@ export function validateEntries(list: unknown): AuditDraft[] | null {
   return out;
 }
 
+/** Is there a running process with this id on this machine? (EPERM = exists but belongs to someone else.) */
+export function processAlive(pid: number): boolean {
+  try { process.kill(pid, 0); } catch (e) { return (e as NodeJS.ErrnoException).code === 'EPERM'; }
+  // A killed process that nobody has collected yet (a "zombie") still answers kill(0) but is not running.
+  try {
+    const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+    return stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3) !== 'Z';
+  } catch { return true; } // no /proc (not Linux): trust kill(0)
+}
+
 const pad = (n: number, w = 2) => String(n).padStart(w, '0');
 const stamp = (t: number) => {
   const d = new Date(t);
@@ -124,14 +134,18 @@ export class DataStore {
         if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
         let holder = 'unknown';
         let age = Infinity;
+        let deadLocal = false;
         try {
           const st = fs.statSync(this.lockPath);
           age = this.o.now() - st.mtimeMs;
           const h = JSON.parse(fs.readFileSync(this.lockPath, 'utf8')) as { host?: string; pid?: number };
           holder = `${h.host ?? '?'} (pid ${h.pid ?? '?'})`;
+          // Left by a process on THIS machine that no longer exists (crash / kill): safe to take over at once,
+          // so an automatic restart (systemd) does not have to wait for the heartbeat to expire.
+          deadLocal = h.host === os.hostname() && Number.isInteger(h.pid) && !processAlive(h.pid as number);
         } catch { /* unreadable lock: treat as stale below */ }
-        if (this.o.forceUnlock || age > this.o.staleLockMs) {
-          this.o.log(`Removing ${this.o.forceUnlock ? 'lock (forced)' : `stale lock held by ${holder}, last heartbeat ${Math.round(age / 1000)}s ago`}`);
+        if (this.o.forceUnlock || deadLocal || age > this.o.staleLockMs) {
+          this.o.log(`Removing ${this.o.forceUnlock ? 'lock (forced)' : deadLocal ? `lock left by ${holder}, which is no longer running` : `stale lock held by ${holder}, last heartbeat ${Math.round(age / 1000)}s ago`}`);
           try { fs.unlinkSync(this.lockPath); } catch { /* someone else removed it */ }
           continue;
         }

@@ -18,9 +18,9 @@ const KIND: Record<BilletKind, string> = { fix: 'קבוע', tmp: 'זמני' };
 
 type BilletFilters = { scope?: string; kind?: string; dmah?: string; fill?: string };
 
-export function BilletsView() {
+export function BilletsView({ initialQuery = '' }: { initialQuery?: string }) {
   const s = useStore();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [f, setF] = useState<BilletFilters>({});
   const [dir, setDir] = useState<1 | -1>(1);
   const [open, setOpen] = useState<Record<number, boolean>>({});

@@ -28,7 +28,7 @@
 
 ### כלל חשוב: שרת אחד בלבד על כל תיקיית נתונים
 קבצים משותפים ב־NFS אינם בטוחים לכתיבה משני תהליכים במקביל. לכן השרת נועל את התיקייה (`server.lock`) ושרת שני שיופעל על אותה תיקייה **יסרב לעלות** עם הודעה ברורה.
-- אם השרת קרס והנעילה נשארה — היא פגה אוטומטית אחרי ~2 דקות. אפשר גם להפעיל עם `FORCE_UNLOCK=1` (רק לאחר שוידאת שאין שרת אחר פעיל).
+- אם השרת קרס והנעילה נשארה: באותו מחשב (למשל הפעלה מחדש אוטומטית של systemd) השרת מזהה שהתהליך הישן אינו קיים ועולה מיד. ממחשב אחר הנעילה פגה אוטומטית אחרי ~2 דקות; אפשר גם להפעיל עם `FORCE_UNLOCK=1` (רק לאחר שוידאת שאין שרת אחר פעיל).
 - הרבה משתמשים יחד אינם בעיה: כולם מתחברים לאותו שרת. שינויים של כמה אנשים בו־זמנית מטופלים כך: מי ששומר ראשון נשמר; השני רואה הודעה, הנתונים מתרעננים והוא מבצע שוב את השינוי.
 
 ### טיפים ל־NFS
@@ -81,7 +81,7 @@
 
 ### Important rule: exactly one server per data folder
 Files on NFS are not safe for two processes writing at once. The server therefore locks the folder (`server.lock`); a second server started on the same folder **refuses to start** with a clear message.
-- If a server crashed and left the lock, it expires after ~2 minutes, or start with `FORCE_UNLOCK=1` (only after making sure no other server is running).
+- If a server crashed and left the lock: on the same machine (e.g. an automatic systemd restart) the new server notices the old process is gone and starts at once. From another machine the lock expires after ~2 minutes, or start with `FORCE_UNLOCK=1` (only after making sure no other server is running).
 - Many users at once are fine: everybody uses the same server. If two people save at the same moment, the first one wins; the second sees a message, the data refreshes, and they repeat their change.
 
 ### NFS tips

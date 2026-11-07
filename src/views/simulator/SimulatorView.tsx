@@ -6,6 +6,7 @@ import { addDays, daysBetween, formatDate, todayISO } from '../../domain/dates';
 import { POP_LABELS } from '../../domain/rules';
 import { assignError, changePoints, snapshot, type PersonAtDate } from '../../logic/simulator';
 import { useStore } from '../../store/store';
+import { CompareView } from './CompareView';
 
 const RANGE = 730; // ± two years around today
 const WEEKDAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
@@ -14,6 +15,7 @@ const WEEKDAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 export function SimulatorView() {
   const s = useStore();
   const today = todayISO();
+  const [panel, setPanel] = useState<'day' | 'compare'>('day');
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [pending, setPending] = useState<{ personId: number; billetId: number } | null>(null);
@@ -57,12 +59,20 @@ export function SimulatorView() {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <PageHeader title="סימולטור ציר זמן" subtitle="כלי נוסף · התרחיש נשמר בנפרד ואינו משנה את הנתונים האמיתיים">
+        <div role="group" aria-label="מצב הסימולטור" className="inline-flex gap-0.5 rounded bg-soft p-[3px]">
+          {([['day', 'מצב ביום נבחר'], ['compare', 'השוואת שני תאריכים']] as const).map(([m, l]) => (
+            <button key={m} type="button" aria-pressed={panel === m} onClick={() => setPanel(m)}
+              className={`h-8 rounded px-3 text-[13px] font-semibold ${panel === m ? 'bg-surface text-ink shadow' : 'text-muted'}`}>{l}</button>
+          ))}
+        </div>
         <dl className="m-0 flex items-center gap-4 text-[13px] text-muted">
           {[['תקנים', snap.kpis.billets, ''], ['מאוישים', snap.kpis.filled, ''], ['פנויים', snap.kpis.vacant, 'text-danger'], ['על תקני', snap.kpis.bench, 'text-[#3730a3]'], ['בארגון', snap.kpis.present, '']].map(([l, n, c]) => (
             <div key={l} className="flex items-baseline gap-1"><dt>{l}</dt><dd className={`m-0 text-base font-bold text-ink ${c}`}>{n}</dd></div>
           ))}
         </dl>
       </PageHeader>
+      {panel === 'compare' ? <CompareView /> : (
+        <>
 
       {/* Time panel */}
       <section aria-label="בחירת תאריך" className="mx-3.5 mt-2.5 flex shrink-0 flex-col gap-0.5 rounded border border-line bg-surface px-4 pt-2.5 pb-1">
@@ -180,6 +190,9 @@ export function SimulatorView() {
           </section>
         </aside>
       </div>
+
+        </>
+      )}
 
       {pending && (
         <Dialog title="שיבוץ בתרחיש" width={440} onClose={() => setPending(null)}

@@ -165,3 +165,32 @@ Grant   id, personId, type (VOUCHER שובר | GRANT מענק | INCENTIVE תמר
 - Implemented: כוח אדם, תקנים, מענקים ותמריצים (including grant **edit and delete**, for correcting entry mistakes, with confirmation), **Excel export / import** for all three, and the **simulator** (see README for the rules).
 - Billet ↔ person is stored as dated billet assignments; changing a person's billet closes the old period and opens a new one, so the billet history fills itself.
 - Not yet: section-membership history for the simulator, applying a scenario to real data, roles/authentication, audit log, backend.
+
+
+---
+
+## 11. Revision 4 — change log, server for an offline NFS install, and productivity features
+
+### 11.1 Decisions
+- **Environment:** air-gapped, only a shared NFS. Therefore: a single Node server process (zero npm dependencies, one file) keeps the data in files on the NFS directory; users only need a browser. Files are written atomically, the change log is append-only, a lock file allows one writer, automatic backups are kept. No database server (SQLite over NFS is unsafe for concurrent access).
+- **Identity:** no login was requested, so the change log records a **self-declared user name** (asked once per browser). It is documentation, not security.
+- **Concurrency:** optimistic versioning. Whoever saves first wins; the other user is told, the data refreshes, and they repeat the change. Simple and predictable, with no silent overwrites.
+- **Section history:** the app records dated section membership (derived from every change to a person's section), so the simulator and the date comparison are accurate for past dates from the moment recording started; before that, people are shown in their current section.
+- **Saved views** are personal (kept in the browser) and can be shared as a link; they are not shared data.
+
+### 11.2 Features
+1. **Change log**: every change to people, sections, commanders, billets, billet assignments, grants and notes becomes a readable entry with time and user. A screen (filters and export) and each person's page show it.
+4. **Backup / restore**: one JSON file; restore is validated field by field and by references, shows what it will load, asks for confirmation, and (on the server) a copy of the current state is kept first.
+5. **"Needs attention"**: releases of people still on a billet, vacant billets (and for how long), long-time על תקני, officers' דמ"ח eligibility near or overdue, grant signings that end. The windows are personal settings.
+6. **Data checks**: commanders missing or misplaced, double-booked billets or people, non-keva on a billet, released but still on a billet, impossible dates, invalid degree or program, duplicate מ.א, broken references. Errors show as a badge in the menu.
+8. **Bulk actions**: checkboxes per row, per group and for all visible rows; move to a section (with a preview, including commanders who lose their command); export the selection. Actions only apply to people that are currently visible.
+9. **Saved views**: named combinations of search, filters, sorting, columns and table/tree view; sharing as a link (validated when opened).
+10. **Person page** and 11. **Section page**: see the README status table.
+15. **Comparison of two dates**: KPI changes, who changed section, who left or joined, billet occupancy changes, who entered or left על תקני.
+
+### 11.3 Not done / limits
+- No authentication or per-field permissions (item 2 of the suggestions list); the server must be protected at network and file-permission level.
+- Commander changes are not part of the dated history, so past dates show current commanders.
+- Two users saving at the same moment: the second must repeat the change (by design).
+- The server keeps all data and the change log in memory: fine for thousands of people and hundreds of thousands of log entries, not millions.
+- Plain HTTP (no TLS); put an internal reverse proxy in front if TLS is required.

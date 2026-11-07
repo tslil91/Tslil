@@ -1,46 +1,11 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
+import { Bar, Card, ReleaseChart, plural } from '../../components/charts';
 import { PageHeader } from '../../components/PageHeader';
 import { rangeFilter, todayISO } from '../../domain/dates';
 import { billetTurnover, educationProgress, officerPrograms, releasesByMonth } from '../../logic/overview';
 import type { Filters } from '../../logic/people';
 import { useStore } from '../../store/store';
-
-/** Hebrew singular / plural: one → "קצין אחד", otherwise "N קצינים". */
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : `${n} ${many}`);
-
-function Card({ title, subtitle, children, wide }: { title: string; subtitle?: string; children: ReactNode; wide?: boolean }) {
-  return (
-    <section aria-label={title} className={`flex flex-col gap-3 rounded border border-line bg-surface p-4 ${wide ? 'col-span-2' : ''}`}>
-      <div className="flex flex-col">
-        <h2 className="m-0 text-[15px] font-bold">{title}</h2>
-        {subtitle && <span className="text-xs text-muted">{subtitle}</span>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-/** A horizontal bar: label, track with fill, value text. */
-function Bar({ label, sub, value, max, text, muted, onClick, hint }: { label: string; sub?: string; value: number; max: number; text: string; muted?: boolean; onClick?: () => void; hint?: string }) {
-  const pct = max > 0 ? Math.max(value > 0 ? 3 : 0, (value / max) * 100) : 0;
-  const inner = (
-    <>
-      <span className="flex w-[118px] shrink-0 flex-col text-start">
-        <span className="truncate text-[13px] font-semibold">{label}</span>
-        {sub && <span className="truncate text-[11px] text-muted">{sub}</span>}
-      </span>
-      <span className="relative h-5 flex-1 overflow-hidden rounded-sm bg-soft" aria-hidden="true">
-        <span className={`absolute inset-y-0 start-0 rounded-sm ${muted ? 'bg-line2' : 'bg-primary'}`} style={{ width: `${pct}%` }} />
-      </span>
-      <span className="w-[150px] shrink-0 text-start text-[13px] font-bold">{text}</span>
-    </>
-  );
-  return onClick ? (
-    <button type="button" onClick={onClick} title={hint} className="flex min-h-9 w-full items-center gap-2 rounded px-1 hover:bg-soft">{inner}</button>
-  ) : (
-    <div className="flex min-h-9 items-center gap-2 px-1">{inner}</div>
-  );
-}
+import { AttentionCard, QualityCard } from './Attention';
 
 /** Separate screen: summary charts. Clicking a bar opens the personnel table already filtered. */
 export function OverviewView() {
@@ -53,7 +18,6 @@ export function OverviewView() {
   const turnover = useMemo(() => billetTurnover(billets, assignments, today, 10), [billets, assignments, today]);
 
   const officerCount = people.filter((p) => p.rank === 'officer').length;
-  const maxRelease = Math.max(1, ...releases.map((m) => m.count));
   const maxProgram = Math.max(1, ...programs.map((p) => p.count));
   const maxTurnover = Math.max(1, ...turnover.map((t) => t.occupants));
   const totalReleases = releases.reduce((s, m) => s + m.count, 0);
@@ -69,24 +33,10 @@ export function OverviewView() {
       <PageHeader title="תמונת מצב" subtitle={`${people.length} אנשים · ${billets.length} תקנים · לחיצה על גרף פותחת את טבלת כוח האדם מסוננת`} />
       <div className="min-h-0 flex-1 overflow-y-auto p-3.5">
         <div className="mx-auto grid max-w-[1180px] grid-cols-2 gap-3.5">
+          <AttentionCard />
+          <QualityCard />
           <Card wide title="שחרורים קרובים — 12 החודשים הבאים (כל כוח האדם)" subtitle={`${plural(totalReleases, 'אדם אחד', 'אנשים')} · לחיצה על עמודה מציגה את המשתחררים באותו חודש`}>
-            <div className="flex h-[190px] items-end gap-1.5 border-b border-line2 px-1">
-              {releases.map((m) => {
-                const h = m.count === 0 ? 0 : Math.max(8, (m.count / maxRelease) * 136);
-                return (
-                  <button key={m.key} type="button" disabled={m.count === 0}
-                    aria-label={`${m.label}: ${plural(m.count, 'שחרור אחד', 'שחרורים')}${m.count ? ' — הצג בטבלה' : ''}`}
-                    onClick={() => show({ releaseDate: rangeFilter(m.from, m.to) }, `מוצגים השחרורים של ${m.label}`)}
-                    className="flex h-full flex-1 flex-col items-center justify-end gap-1 rounded-t enabled:hover:bg-soft disabled:cursor-default">
-                    <span className="text-[13px] font-bold">{m.count || ''}</span>
-                    <span className={`w-full max-w-[48px] rounded-t-sm ${m.count ? 'bg-primary' : ''}`} style={{ height: h }} />
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex gap-1.5 px-1" aria-hidden="true">
-              {releases.map((m) => <span key={m.key} className="flex-1 text-center text-[11px] text-muted">{m.label}</span>)}
-            </div>
+            <ReleaseChart months={releases} onPick={(m) => show({ releaseDate: rangeFilter(m.from, m.to) }, `מוצגים השחרורים של ${m.label}`)} />
           </Card>
 
           <Card title="השכלה והסמכות" subtitle="כל מי שהשדה רלוונטי עבורו · לחיצה מציגה מי שעדיין חסר/ה">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconCheck, IconChevron, IconEdit, IconMove, IconPlus, IconTable, IconTree, IconX } from '../../components/Icons';
 import { PageHeader, SearchBox } from '../../components/PageHeader';
 import { todayISO } from '../../domain/dates';
@@ -12,16 +12,24 @@ import { downloadWorkbook } from '../../io/excel';
 import { peopleSheet, planPeopleImport } from '../../logic/sheets';
 import { DateFilterDialog } from '../../components/DateFilterDialog';
 import { describeDateFilter } from '../../domain/dates';
+import { replaceHash, personHref, sectionHref } from '../../nav';
+import { decodeView, type ViewState } from '../../logic/views';
+import { BulkMoveDialog } from './BulkMoveDialog';
+import { ViewsDialog } from './ViewsDialog';
+import { IconBookmark } from '../../components/Icons';
 import { AddPersonDialog } from './AddPersonDialog';
 import { SectionsDialog } from './SectionsDialog';
 import { MoveDialog } from './MoveDialog';
 import { CellView, FieldEditor, patchDraft, toDraft } from './PersonCells';
 import { PeopleTree } from './PeopleTree';
 
+const CHECK_W = 36;
 const ACTIONS_W = 96;
 const NAME_W = 210;
+const ACTIONS_AT = CHECK_W;
+const NAME_AT = CHECK_W + ACTIONS_W;
 
-export function PeopleView() {
+export function PeopleView({ viewCode }: { viewCode?: string | null }) {
   const s = useStore();
   const today = todayISO();
   const [view, setView] = useState<'table' | 'tree'>('table');
@@ -39,6 +47,9 @@ export function PeopleView() {
   const [importing, setImporting] = useState(false);
   const [managing, setManaging] = useState(false);
   const [dateFilterFor, setDateFilterFor] = useState<FieldDef | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkMoving, setBulkMoving] = useState(false);
+  const [viewsOpen, setViewsOpen] = useState(false);
 
   // Opened from the overview screen: apply the filters it asked for (once).
   const pending = useStore((st) => st.pendingPeopleFilter);
@@ -51,6 +62,15 @@ export function PeopleView() {
     useStore.getState().showToast(pending.message);
   }, [pending]);
 
+  const applyView = (v: ViewState) => { setQuery(v.query); setFilters(v.filters); setSort(v.sort); setShowEdu(v.showEdu); setShowDmah(v.showDmah); setView(v.view); setSelected(new Set()); };
+  // Opened from a shared link (#/people?view=...): apply it once and drop the parameter.
+  useEffect(() => {
+    if (!viewCode) return;
+    const v = decodeView(viewCode);
+    if (v) { applyView(v); useStore.getState().showToast('נטענה תצוגה משותפת'); } else useStore.getState().showToast('קישור התצוגה אינו תקין');
+    replaceHash('#/people');
+  }, [viewCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const rows: PersonRow[] = useMemo(() => {
     const map = billetByPerson(s.assignments);
     return s.people.map((p) => ({ ...p, billet: map.get(p.id) ?? null }));
@@ -61,7 +81,17 @@ export function PeopleView() {
   const groups = groupPeople(shown, s.sections, s.commanders, sort, s.people).filter((g) => !filtering || g.rows.length > 0);
 
   const visible = FIELDS.filter((f) => f.group === 'base' || (f.group === 'edu' && showEdu) || (f.group === 'dmah' && showDmah));
-  const gridCols = `${ACTIONS_W}px ${NAME_W}px ${visible.map((f) => `${f.width}px`).join(' ')}`;
+  const gridCols = `${CHECK_W}px ${ACTIONS_W}px ${NAME_W}px ${visible.map((f) => `${f.width}px`).join(' ')}`;
+  const current: ViewState = { query, filters, sort, showEdu, showDmah, view };
+  // bulk actions only ever apply to people that are currently visible
+  const shownIds = new Set(shown.map((r) => r.id));
+  const selIds = [...selected].filter((id) => shownIds.has(id));
+  const hiddenSelected = selected.size - selIds.length;
+  const allShownSelected = shown.length > 0 && selIds.length === shown.length;
+  const toggleOne = (id: number) => setSelected((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggleMany = (ids: number[], on: boolean) => setSelected((cur) => { const n = new Set(cur); ids.forEach((id) => (on ? n.add(id) : n.delete(id))); return n; });
+  const headerCheck = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (headerCheck.current) headerCheck.current.indeterminate = selIds.length > 0 && !allShownSelected; });
   const filterCount = Object.values(filters).filter(Boolean).length;
   const isDefaultSort = sort.key === DEFAULT_SORT.key && sort.dir === DEFAULT_SORT.dir;
 
@@ -112,6 +142,7 @@ export function PeopleView() {
               {s.sections.map((sec) => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
             </select>
             <button type="button" className="btn" onClick={() => setManaging(true)}>ניהול מדורים</button>
+            <button type="button" className="btn" onClick={() => setViewsOpen(true)}><IconBookmark size={15} />תצוגות שמורות</button>
             <span className="h-6 w-px bg-line2" />
             <span className="text-[13px] font-semibold">עמודות:</span>
             <button type="button" className={`btn ${showEdu ? 'btn-on' : ''}`} aria-pressed={showEdu} onClick={() => setShowEdu((v) => !v)}>השכלה והכשרה</button>
@@ -124,12 +155,27 @@ export function PeopleView() {
             {filterCount > 0 && <button type="button" className="btn" onClick={() => setFilters({})}>נקה {filterCount} סינונים</button>}
           </div>
 
+          {selected.size > 0 && (
+            <div role="region" aria-label="פעולות על הנבחרים" className="mx-3.5 mb-2 flex shrink-0 items-center gap-2.5 rounded bg-primary px-3.5 py-2 text-white">
+              <strong className="text-sm">{selIds.length} נבחרו</strong>
+              {hiddenSelected > 0 && <span className="text-xs opacity-90">({hiddenSelected} נוספים מוסתרים בסינון ולא ייכללו)</span>}
+              <span className="flex-1" />
+              <button type="button" className="btn" disabled={selIds.length === 0} onClick={() => setBulkMoving(true)}>העברה למדור…</button>
+              <button type="button" className="btn" disabled={selIds.length === 0} onClick={() => void downloadWorkbook(`selected-${today}`, [peopleSheet(shown.filter((r) => selected.has(r.id)), s.sections, s.commanders)])}>ייצוא הנבחרים ל־Excel</button>
+              <button type="button" className="btn" onClick={() => setSelected(new Set())}>נקה בחירה</button>
+            </div>
+          )}
+
           <div className="mx-3.5 mb-3 min-h-0 flex-1 overflow-auto rounded border border-line bg-surface">
             <div className="inline-block min-w-full">
               {/* header */}
               <div className="sticky top-0 z-20 grid min-w-max border-b-2 border-line2 bg-head" style={{ gridTemplateColumns: gridCols }}>
-                <div className="sticky start-0 z-30 flex items-end bg-head px-2 py-1.5"><span className="label">פעולות</span></div>
-                <div className="sticky z-30 flex flex-col gap-1 border-e border-line bg-head px-2 py-1.5" style={{ insetInlineStart: ACTIONS_W }}>
+                <div className="sticky start-0 z-30 flex items-end justify-center bg-head pb-2">
+                  <input ref={headerCheck} type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label="בחירת כל האנשים המוצגים" checked={allShownSelected} disabled={shown.length === 0}
+                    onChange={(e) => toggleMany(shown.map((r) => r.id), e.target.checked)} />
+                </div>
+                <div className="sticky z-30 flex items-end bg-head px-2 py-1.5" style={{ insetInlineStart: ACTIONS_AT }}><span className="label">פעולות</span></div>
+                <div className="sticky z-30 flex flex-col gap-1 border-e border-line bg-head px-2 py-1.5" style={{ insetInlineStart: NAME_AT }}>
                   <SortButton label="שם" arrow={arrow('name')} onClick={() => toggleSort('name')} />
                   <span className="h-[30px]" />
                 </div>
@@ -143,13 +189,17 @@ export function PeopleView() {
                 return (
                   <section key={g.id} aria-label={g.name}>
                     <div className="min-w-max border-b border-line2 bg-group">
-                      <button type="button" aria-expanded={open} onClick={() => setCollapsed((c) => ({ ...c, [g.id]: open }))}
-                        className="sticky start-0 inline-flex h-[34px] items-center gap-3 px-3.5">
-                        <IconChevron size={16} open={open} className="text-muted" />
-                        <span className="text-sm font-bold">{g.name}</span>
-                        <span className="chip chip-neutral">{g.rows.length}</span>
-                        <span className="text-xs text-muted">{g.commanderLabel}: {g.commander ? `${g.commander.degree} ${g.commander.name}` : 'לא מונה'}</span>
-                      </button>
+                      <div className="sticky start-0 inline-flex h-[34px] items-center gap-3 ps-3 pe-3.5">
+                        <input type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label={`בחירת כל אנשי ${g.name}`} disabled={g.rows.length === 0}
+                          checked={g.rows.length > 0 && g.rows.every((r) => selected.has(r.id))} onChange={(e) => toggleMany(g.rows.map((r) => r.id), e.target.checked)} />
+                        <button type="button" aria-expanded={open} onClick={() => setCollapsed((c) => ({ ...c, [g.id]: open }))} className="inline-flex items-center gap-3">
+                          <IconChevron size={16} open={open} className="text-muted" />
+                          <span className="text-sm font-bold">{g.name}</span>
+                          <span className="chip chip-neutral">{g.rows.length}</span>
+                          <span className="text-xs text-muted">{g.commanderLabel}: {g.commander ? `${g.commander.degree} ${g.commander.name}` : 'לא מונה'}</span>
+                        </button>
+                        <a href={sectionHref(g.id === 'org' ? null : g.id)} className="text-xs font-semibold text-accent underline">דף {g.id === 'org' ? 'הכפופים' : 'המדור'}</a>
+                      </div>
                     </div>
                     {open && (
                       <div className="zebra">
@@ -157,7 +207,10 @@ export function PeopleView() {
                           const editing = draft?.id === r.id ? draft : null;
                           return (
                             <div key={r.id} className={`row grid min-h-9 min-w-max items-center border-b border-line text-[12.5px] ${editing ? 'row-active' : ''}`} style={{ gridTemplateColumns: gridCols }}>
-                              <span className="sticky start-0 z-10 flex h-full items-center gap-0.5 bg-inherit px-1.5">
+                              <span className="sticky start-0 z-10 flex h-full items-center justify-center bg-inherit">
+                                <input type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label={`בחירת ${r.name}`} checked={selected.has(r.id)} onChange={() => toggleOne(r.id)} />
+                              </span>
+                              <span className="sticky z-10 flex h-full items-center gap-0.5 bg-inherit px-1.5" style={{ insetInlineStart: ACTIONS_AT }}>
                                 {editing ? (
                                   <>
                                     <button type="button" className="icon-btn icon-btn-ok" title="שמירה" aria-label="שמירת השינויים" onClick={saveDraft}><IconCheck size={16} /></button>
@@ -170,12 +223,12 @@ export function PeopleView() {
                                   </>
                                 )}
                               </span>
-                              <span className="sticky z-10 flex h-full min-w-0 items-center gap-1.5 overflow-hidden border-e border-line bg-inherit px-2 font-semibold" style={{ insetInlineStart: ACTIONS_W }}>
+                              <span className="sticky z-10 flex h-full min-w-0 items-center gap-1.5 overflow-hidden border-e border-line bg-inherit px-2 font-semibold" style={{ insetInlineStart: NAME_AT }}>
                                 {editing ? (
                                   <FieldEditor f={{ key: 'name', label: 'שם', type: 'text', group: 'base', width: NAME_W }} draft={editing} onChange={(p) => setDraft((d) => d && patchDraft(d, p))} />
                                 ) : (
                                   <>
-                                    <span className="truncate">{r.name}</span>
+                                    <a href={personHref(r.id)} className="truncate text-ink no-underline hover:underline" title="לדף האדם">{r.name}</a>
                                     {s.commanders.org === r.id && <span className="chip chip-cmd">מפקד הארגון</span>}
                                     {r.sectionId && s.commanders.sections[r.sectionId] === r.id && <span className="chip chip-cmd">מפקד המדור</span>}
                                   </>
@@ -205,6 +258,8 @@ export function PeopleView() {
       {moving && <MoveDialog person={moving} onClose={() => setMoving(null)} />}
       {adding && <AddPersonDialog onClose={() => setAdding(false)} />}
       {managing && <SectionsDialog onClose={() => setManaging(false)} />}
+      {bulkMoving && <BulkMoveDialog ids={selIds} onClose={() => setBulkMoving(false)} onDone={() => setSelected(new Set())} />}
+      {viewsOpen && <ViewsDialog current={current} onApply={applyView} onClose={() => setViewsOpen(false)} toast={s.showToast} />}
       {dateFilterFor && (
         <DateFilterDialog
           title={dateFilterFor.label}

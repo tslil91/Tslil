@@ -8,6 +8,7 @@ import type { AuditDraft } from '../logic/audit';
 import { deriveSectionHistory } from '../logic/history';
 import { nextId, openAssignment, removeBillet, setPersonBillet } from '../logic/billets';
 import { addSection, deleteSection, renameSection } from '../logic/sections';
+import { bulkMove, type BulkDest } from '../logic/bulk';
 import { applyPlacement, type PersonDraft, type PlacementKey } from '../logic/people';
 import type { Filters } from '../logic/people';
 import type { NewScenarioOp, ScenarioOp } from '../logic/simulator';
@@ -48,6 +49,8 @@ interface Actions {
   /** Create or update a person (id null = new). The billet is applied through billet assignments. */
   savePerson: (draft: PersonDraft) => Person;
   placePerson: (personId: number, key: PlacementKey) => void;
+  /** Move several people at once. Returns what happened (for the confirmation message). */
+  bulkMovePeople: (ids: number[], dest: BulkDest) => ReturnType<typeof bulkMove>;
   addSection: (name: string) => void;
   renameSection: (id: string, name: string) => void;
   /** Returns how many people were moved to the head of the organization. */
@@ -122,6 +125,13 @@ const creator: StateCreator<AppState, [['zustand/persist', unknown]]> = (set0, g
         for (const k of Object.keys(sections)) if (sections[k] === id && person.sectionId !== k) sections[k] = null;
         set({ people, assignments: synced, commanders: { ...s.commanders, sections } });
         return person;
+      },
+
+      bulkMovePeople: (ids, dest) => {
+        const s = get();
+        const r = bulkMove(s.people, s.commanders, ids, dest);
+        if (r.moved > 0) set({ people: r.people, commanders: r.commanders });
+        return r;
       },
 
       placePerson: (personId, key) => {

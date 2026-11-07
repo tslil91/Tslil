@@ -6,6 +6,8 @@ import {
   type Cell, type ImportPlan, type RowError, type Table,
 } from './cells';
 import { FIELDS } from './fields';
+import type { AuditEntry } from '../domain/types';
+import { AUDIT_KIND_LABELS } from './auditFilter';
 import { BASIS_LABELS, GRANT_TYPE_LABELS, validateGrant, type GrantDraft } from './grants';
 import type { PersonDraft } from './people';
 
@@ -278,6 +280,19 @@ export function planGrantImport(t: Table, grants: Grant[], people: Person[], tod
     }
   }
   return plan;
+}
+
+// ======================= Change log (export only) =======================
+
+export function auditSheet(entries: AuditEntry[]): SheetSpec {
+  return {
+    name: 'יומן שינויים',
+    columns: [{ header: 'זמן', width: 18 }, { header: 'משתמש', width: 16 }, { header: 'סוג', width: 10 }, { header: 'תיאור', width: 70 }, { header: 'פרטים', width: 60 }],
+    rows: entries.map((e) => [
+      new Date(e.at).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'medium' }), e.actor, AUDIT_KIND_LABELS[e.kind], e.summary,
+      e.details.map((d) => `${d.label}: ${d.from ? `${d.from} ← ` : ''}${d.to || '—'}`).join(' | '),
+    ]),
+  };
 }
 
 export type { Cell, RowError, Table };
