@@ -30,7 +30,8 @@ export function GrantsView() {
   const [query, setQuery] = useState('');
   const [fType, setFType] = useState('');
   const [fBasis, setFBasis] = useState('');
-  const [fSec, setFSec] = useState('');
+  const [rawSec, setFSec] = useState('');
+  const fSec = rawSec && rawSec !== 'none' && !s.sections.some((x) => x.id === rawSec) ? '' : rawSec;
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'latest', dir: -1 });
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const [editing, setEditing] = useState<Grant | 'new' | null>(null);

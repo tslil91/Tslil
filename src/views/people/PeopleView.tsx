@@ -11,6 +11,7 @@ import { ImportDialog } from '../../components/ImportDialog';
 import { downloadWorkbook } from '../../io/excel';
 import { peopleSheet, planPeopleImport } from '../../logic/sheets';
 import { AddPersonDialog } from './AddPersonDialog';
+import { SectionsDialog } from './SectionsDialog';
 import { MoveDialog } from './MoveDialog';
 import { CellView, FieldEditor, patchDraft, toDraft } from './PersonCells';
 import { PeopleTree } from './PeopleTree';
@@ -23,7 +24,9 @@ export function PeopleView() {
   const today = todayISO();
   const [view, setView] = useState<'table' | 'tree'>('table');
   const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState<Filters>({});
+  const [rawFilters, setFilters] = useState<Filters>({});
+  // a filter on a section that was deleted is ignored
+  const filters: Filters = rawFilters.section && rawFilters.section !== 'none' && !s.sections.some((x) => x.id === rawFilters.section) ? { ...rawFilters, section: undefined } : rawFilters;
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [showEdu, setShowEdu] = useState(true);
   const [showDmah, setShowDmah] = useState(false);
@@ -32,6 +35,7 @@ export function PeopleView() {
   const [moving, setMoving] = useState<Person | null>(null);
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [managing, setManaging] = useState(false);
 
   const rows: PersonRow[] = useMemo(() => {
     const map = billetByPerson(s.assignments);
@@ -93,6 +97,7 @@ export function PeopleView() {
               <option value="none">מפקד הארגון וכפופים ישירות</option>
               {s.sections.map((sec) => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
             </select>
+            <button type="button" className="btn" onClick={() => setManaging(true)}>ניהול מדורים</button>
             <span className="h-6 w-px bg-line2" />
             <span className="text-[13px] font-semibold">עמודות:</span>
             <button type="button" className={`btn ${showEdu ? 'btn-on' : ''}`} aria-pressed={showEdu} onClick={() => setShowEdu((v) => !v)}>השכלה והכשרה</button>
@@ -185,6 +190,7 @@ export function PeopleView() {
 
       {moving && <MoveDialog person={moving} onClose={() => setMoving(null)} />}
       {adding && <AddPersonDialog onClose={() => setAdding(false)} />}
+      {managing && <SectionsDialog onClose={() => setManaging(false)} />}
       {importing && (
         <ImportDialog
           title="ייבוא כוח אדם מ־Excel"

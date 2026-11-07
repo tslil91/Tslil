@@ -4,6 +4,7 @@ import { todayISO } from '../domain/dates';
 import { normalizePerson } from '../domain/rules';
 import type { Billet, Grant, Person } from '../domain/types';
 import { nextId, openAssignment, removeBillet, setPersonBillet } from '../logic/billets';
+import { addSection, deleteSection, renameSection } from '../logic/sections';
 import { applyPlacement, type PersonDraft, type PlacementKey } from '../logic/people';
 import type { NewScenarioOp, ScenarioOp } from '../logic/simulator';
 import { seedData, type Data } from './seed';
@@ -22,6 +23,10 @@ interface Actions {
   /** Create or update a person (id null = new). The billet is applied through billet assignments. */
   savePerson: (draft: PersonDraft) => Person;
   placePerson: (personId: number, key: PlacementKey) => void;
+  addSection: (name: string) => void;
+  renameSection: (id: string, name: string) => void;
+  /** Returns how many people were moved to the head of the organization. */
+  deleteSection: (id: string) => number;
   addBillet: (b: Billet) => void;
   updateBillet: (id: number, patch: Partial<Omit<Billet, 'id'>>) => void;
   deleteBillet: (id: number) => void;
@@ -87,6 +92,15 @@ export const useStore = create<AppState>()(
         const updated = s.grants.map((g) => byId.get(g.id) ?? g);
         return { grants: [...updated, ...items.filter((g) => !s.grants.some((x) => x.id === g.id))] };
       }),
+
+      addSection: (name) => set((s) => addSection(s.sections, s.commanders, name)),
+      renameSection: (id, name) => set((s) => ({ sections: renameSection(s.sections, id, name) })),
+      deleteSection: (id) => {
+        const s = get();
+        const r = deleteSection(s.sections, s.people, s.commanders, id);
+        set({ sections: r.sections, people: r.people, commanders: r.commanders });
+        return r.moved;
+      },
 
       addBillet: (b) => set((s) => ({ billets: [...s.billets, b] })),
       updateBillet: (id, patch) => set((s) => ({ billets: s.billets.map((b) => (b.id === id ? { ...b, ...patch } : b)) })),
