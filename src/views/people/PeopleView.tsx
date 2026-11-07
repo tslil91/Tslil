@@ -7,6 +7,9 @@ import { billetByPerson } from '../../logic/billets';
 import { FIELDS, filterOptions, type FieldDef, type FieldKey } from '../../logic/fields';
 import { DEFAULT_SORT, groupPeople, matchesFilters, validatePerson, type Filters, type PersonDraft, type SortState } from '../../logic/people';
 import { occupantOf, useStore } from '../../store/store';
+import { ImportDialog } from '../../components/ImportDialog';
+import { downloadWorkbook } from '../../io/excel';
+import { peopleSheet, planPeopleImport } from '../../logic/sheets';
 import { AddPersonDialog } from './AddPersonDialog';
 import { MoveDialog } from './MoveDialog';
 import { CellView, FieldEditor, patchDraft, toDraft } from './PersonCells';
@@ -28,6 +31,7 @@ export function PeopleView() {
   const [draft, setDraft] = useState<PersonDraft | null>(null);
   const [moving, setMoving] = useState<Person | null>(null);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const rows: PersonRow[] = useMemo(() => {
     const map = billetByPerson(s.assignments);
@@ -69,6 +73,9 @@ export function PeopleView() {
           ))}
         </div>
         <SearchBox value={query} onChange={setQuery} placeholder="חיפוש לפי שם או מ.א" />
+        <button type="button" className="btn" title="ייצוא האנשים המוצגים (לפי הסינון) לקובץ Excel"
+          onClick={() => { void downloadWorkbook(`כוח-אדם-${today}`, [peopleSheet(groups.flatMap((g) => g.rows), s.sections, s.commanders)]); }}>ייצוא ל־Excel</button>
+        <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
         <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}><IconPlus size={16} />הוספת איש צוות</button>
       </PageHeader>
 
@@ -178,6 +185,19 @@ export function PeopleView() {
 
       {moving && <MoveDialog person={moving} onClose={() => setMoving(null)} />}
       {adding && <AddPersonDialog onClose={() => setAdding(false)} />}
+      {importing && (
+        <ImportDialog
+          title="ייבוא כוח אדם מ־Excel"
+          sheetName="כוח אדם"
+          noun="אנשים"
+          rulesHint="השורות מותאמות לפי מ.א: מ.א קיים יעודכן, מ.א חדש ייווסף. עמודות חובה: מ.א, שם, אוכלוסייה, סוג, דרגה. עמודה שאינה בקובץ לא תשתנה. עמודת 'תפקיד' אינה מיובאת — מינוי מפקדים נעשה במערכת."
+          plan={(t) => planPeopleImport(t, { people: s.people, billets: s.billets, billetOf: billetByPerson(s.assignments), sections: s.sections, commanders: s.commanders })}
+          apply={(pl) => { s.importPeople([...pl.creates, ...pl.updates]); s.showToast(`יובאו ${pl.creates.length} חדשים ו־${pl.updates.length} עדכונים`); }}
+          template={() => [peopleSheet(rows, s.sections, s.commanders)]}
+          templateFile={`כוח-אדם-${today}`}
+          onClose={() => setImporting(false)}
+        />
+      )}
     </div>
   );
 }

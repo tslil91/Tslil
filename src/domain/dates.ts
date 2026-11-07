@@ -43,3 +43,8 @@ const money = new Intl.NumberFormat('he-IL', { maximumFractionDigits: 0 });
 export function formatMoney(n: number): string {
   return '₪' + money.format(n);
 }
+
+export function addDays(iso: ISODate, days: number): ISODate {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}

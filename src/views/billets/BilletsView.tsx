@@ -6,6 +6,10 @@ import { formatDate } from '../../domain/dates';
 import type { Billet, BilletKind, BilletScope } from '../../domain/types';
 import { billetHistory, openAssignment, validateNewBillet } from '../../logic/billets';
 import { useStore } from '../../store/store';
+import { ImportDialog } from '../../components/ImportDialog';
+import { downloadWorkbook } from '../../io/excel';
+import { billetSheets, planBilletImport } from '../../logic/sheets';
+import { todayISO } from '../../domain/dates';
 import { Segmented } from '../../components/Segmented';
 
 const GRID = '52px 130px 170px 170px 140px minmax(220px, 1fr) 64px';
@@ -22,6 +26,9 @@ export function BilletsView() {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<Billet | null>(null);
+  const [importing, setImporting] = useState(false);
+  const midOf = (a: { personId: number | null }) => (a.personId !== null ? s.people.find((p) => p.id === a.personId)?.mid ?? null : null);
+  const sheets = (list: Billet[]) => billetSheets(list, s.assignments, (a) => nameOf(a.personId, a.personName), midOf);
 
   const nameOf = (personId: number | null, fallback: string) => (personId !== null ? s.people.find((p) => p.id === personId)?.name ?? fallback : fallback);
   const q = query.trim();
@@ -58,6 +65,8 @@ export function BilletsView() {
       <PageHeader title="תקנים" subtitle={`${shown.length} מתוך ${s.billets.length} תקנים · ${filledCount} מאוישים`}>
         <SearchBox value={query} onChange={setQuery} placeholder="שאילתה: מספר תקן או שם משובץ (גם בעבר)" width={340} />
         {hasFilters && <button type="button" className="btn" onClick={() => { setF({}); setQuery(''); }}>נקה סינון</button>}
+        <button type="button" className="btn" title="ייצוא התקנים המוצגים והיסטוריית השיבוץ שלהם" onClick={() => { void downloadWorkbook(`תקנים-${todayISO()}`, sheets(shown)); }}>ייצוא ל־Excel</button>
+        <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
         <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}><IconPlus size={16} />הוספת תקן</button>
       </PageHeader>
 
@@ -134,6 +143,19 @@ export function BilletsView() {
       </div>
 
       {adding && <AddBilletDialog onClose={() => setAdding(false)} />}
+      {importing && (
+        <ImportDialog
+          title="ייבוא תקנים מ־Excel"
+          sheetName="תקנים"
+          noun="תקנים"
+          rulesHint="השורות מותאמות לפי מספר תקן: תקן קיים יעודכן, תקן חדש ייווסף (חובה למלא פנימי / חיצוני, קבוע / זמני ו־דמ&quot;ח). עמודת 'משובץ כעת' וגיליון ההיסטוריה אינם מיובאים — שיבוץ נעשה במסך כוח אדם. תקנים אינם נמחקים בייבוא."
+          plan={(t) => planBilletImport(t, s.billets)}
+          apply={(pl) => { s.importBillets([...pl.creates, ...pl.updates]); s.showToast(`יובאו ${pl.creates.length} תקנים חדשים ו־${pl.updates.length} עדכונים`); }}
+          template={() => sheets(s.billets)}
+          templateFile={`תקנים-${todayISO()}`}
+          onClose={() => setImporting(false)}
+        />
+      )}
       {removing && (
         <ConfirmDialog
           title={`למחוק את תקן ${removing.id}?`}

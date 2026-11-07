@@ -162,6 +162,6 @@ Grant   id, personId, type (VOUCHER שובר | GRANT מענק | INCENTIVE תמר
 
 ## 10. Implementation status (code started)
 - Stack in use: Vite 6, React 19, TypeScript 5.8 (strict), Tailwind CSS 4, Zustand 5 (persisted to localStorage), Vitest 3.
-- Implemented: כוח אדם, תקנים, מענקים ותמריצים (including grant **edit and delete**, for correcting entry mistakes, with confirmation). Simulator is a placeholder.
+- Implemented: כוח אדם, תקנים, מענקים ותמריצים (including grant **edit and delete**, for correcting entry mistakes, with confirmation), **Excel export / import** for all three, and the **simulator** (see README for the rules).
 - Billet ↔ person is stored as dated billet assignments; changing a person's billet closes the old period and opens a new one, so the billet history fills itself.
-- Not yet: simulator engine, Excel export, roles/authentication, audit log, backend.
+- Not yet: section-membership history for the simulator, applying a scenario to real data, roles/authentication, audit log, backend.

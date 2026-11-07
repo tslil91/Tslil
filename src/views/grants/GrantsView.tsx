@@ -11,6 +11,9 @@ import {
   latestFirst, totals, updateGrantDraft, validateGrant, type GrantDraft,
 } from '../../logic/grants';
 import { useStore } from '../../store/store';
+import { ImportDialog } from '../../components/ImportDialog';
+import { downloadWorkbook } from '../../io/excel';
+import { grantsSheet, planGrantImport } from '../../logic/sheets';
 
 const GRID = '52px 200px 110px 100px 160px 90px minmax(240px, 1fr) 240px';
 const SUB_GRID = '120px 120px 120px 120px 130px 90px 110px 76px';
@@ -32,6 +35,7 @@ export function GrantsView() {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const [editing, setEditing] = useState<Grant | 'new' | null>(null);
   const [removing, setRemoving] = useState<Grant | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const secName = (id: string | null) => (id ? s.sections.find((x) => x.id === id)?.name ?? id : 'כפוף ישירות');
 
@@ -67,6 +71,8 @@ export function GrantsView() {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <PageHeader title="מענקים ותמריצים" subtitle={`${rows.length} אנשים · ${allShown.length} רשומות · ${totalText(allShown)}`}>
         <SearchBox value={query} onChange={setQuery} placeholder="חיפוש לפי שם או מ.א" />
+        <button type="button" className="btn" title="ייצוא הרשומות המוצגות (לפי הסינון)" onClick={() => { void downloadWorkbook(`מענקים-${todayISO()}`, [grantsSheet(allShown, s.people, s.sections)]); }}>ייצוא ל־Excel</button>
+        <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
         <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}><IconPlus size={16} />הוספת מענק</button>
       </PageHeader>
 
@@ -164,6 +170,19 @@ export function GrantsView() {
             setEditing(null);
           }}
           nextGrantId={nextId(s.grants)}
+        />
+      )}
+      {importing && (
+        <ImportDialog
+          title="ייבוא מענקים ותמריצים מ־Excel"
+          sheetName="מענקים ותמריצים"
+          noun="רשומות"
+          rulesHint="כל שורה משויכת לאיש צוות לפי מ.א. שורה עם 'מזהה' קיים תעדכן את הרשומה; שורה בלי מזהה (או עם מזהה חדש) תיווסף. עמודות חובה: מ.א, סוג, סכום, ברוטו / נטו. רשומות אינן נמחקות בייבוא."
+          plan={(t) => planGrantImport(t, s.grants, s.people, todayISO())}
+          apply={(pl) => { s.importGrants([...pl.creates, ...pl.updates]); s.showToast(`יובאו ${pl.creates.length} רשומות חדשות ו־${pl.updates.length} עדכונים`); }}
+          template={() => [grantsSheet(latestFirst(s.grants), s.people, s.sections)]}
+          templateFile={`מענקים-${todayISO()}`}
+          onClose={() => setImporting(false)}
         />
       )}
       {removing && (
