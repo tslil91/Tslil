@@ -3,10 +3,11 @@ import { Rail, type Route } from './components/Rail';
 import { Toast } from './components/Toast';
 import { BilletsView } from './views/billets/BilletsView';
 import { GrantsView } from './views/grants/GrantsView';
+import { OverviewView } from './views/overview/OverviewView';
 import { PeopleView } from './views/people/PeopleView';
 import { SimulatorView } from './views/simulator/SimulatorView';
 
-const ROUTES: Route[] = ['people', 'billets', 'grants', 'simulator'];
+const ROUTES: Route[] = ['people', 'billets', 'grants', 'overview', 'simulator'];
 const parse = (): Route => {
   const r = window.location.hash.replace(/^#\/?/, '') as Route;
   return ROUTES.includes(r) ? r : 'people';
@@ -32,6 +33,7 @@ export default function App() {
         {route === 'people' && <PeopleView />}
         {route === 'billets' && <BilletsView />}
         {route === 'grants' && <GrantsView />}
+        {route === 'overview' && <OverviewView />}
         {route === 'simulator' && <SimulatorView />}
       </main>
       <Toast />

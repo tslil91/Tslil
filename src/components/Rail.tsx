@@ -1,14 +1,15 @@
 import { useState, type ReactNode } from 'react';
 import { ConfirmDialog } from './Dialog';
 import { useStore } from '../store/store';
-import { IconBillet, IconClock, IconGift, IconPeople, IconReset } from './Icons';
+import { IconBillet, IconChart, IconClock, IconGift, IconPeople, IconReset } from './Icons';
 
-export type Route = 'people' | 'billets' | 'grants' | 'simulator';
+export type Route = 'people' | 'billets' | 'grants' | 'overview' | 'simulator';
 
 const MAIN: { route: Route; label: string; icon: ReactNode }[] = [
   { route: 'people', label: 'כוח אדם', icon: <IconPeople size={20} /> },
   { route: 'billets', label: 'תקנים', icon: <IconBillet size={20} /> },
   { route: 'grants', label: 'מענקים ותמריצים', icon: <IconGift size={20} /> },
+  { route: 'overview', label: 'תמונת מצב', icon: <IconChart size={20} /> },
 ];
 
 function NavLink({ route, label, icon, current }: { route: Route; label: string; icon: ReactNode; current: Route }) {

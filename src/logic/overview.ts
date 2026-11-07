@@ -1,5 +1,5 @@
 import { MONTH_NAMES, daysBetween, monthBounds } from '../domain/dates';
-import { PROGRAMS } from '../domain/rules';
+import { PROGRAMS, applicable } from '../domain/rules';
 import type { Billet, BilletAssignment, ISODate, Person } from '../domain/types';
 
 const isOfficer = (p: Person) => p.rank === 'officer';
@@ -17,8 +17,8 @@ export interface ReleaseMonth {
 
 const SHORT_MONTH = MONTH_NAMES.map((n) => (n.length > 4 ? `${n.slice(0, 3)}׳` : n));
 
-/** Releases in each of the next `months` months, starting with the current one (from today on). */
-export function releasesByMonth(people: Person[], today: ISODate, months = 12, officersOnly = true): ReleaseMonth[] {
+/** Releases in each of the next `months` months, starting with the current one (from today on). Everyone by default. */
+export function releasesByMonth(people: Person[], today: ISODate, months = 12, officersOnly = false): ReleaseMonth[] {
   const [ty, tm] = today.split('-').map(Number);
   const pool = people.filter((p) => p.releaseDate && (!officersOnly || isOfficer(p)));
   return Array.from({ length: months }, (_, i) => {
@@ -37,16 +37,30 @@ export function releasesByMonth(people: Person[], today: ISODate, months = 12, o
   });
 }
 
-// ---------- 4. Officers' education & certification ----------
+// ---------- 4. Education & certification (everyone the field applies to) ----------
 
 export type EduKey = 'bachelor' | 'masters' | 'gamoshA' | 'gamoshB';
-export interface Progress { key: EduKey; label: string; yes: number; total: number }
+export interface Progress {
+  key: EduKey;
+  label: string;
+  yes: number;
+  /** Everyone the field applies to (תואר ו־גמו"ש א׳: קצינים ונגדים · גמו"ש ב׳: קצינים). */
+  total: number;
+  who: string;
+}
 
-const EDU: [EduKey, string][] = [['bachelor', 'תואר ראשון'], ['masters', 'תואר שני'], ['gamoshA', 'גמו"ש א׳'], ['gamoshB', 'גמו"ש ב׳']];
+const EDU: [EduKey, string, string][] = [
+  ['bachelor', 'תואר ראשון', 'קצינים ונגדים'],
+  ['masters', 'תואר שני', 'קצינים ונגדים'],
+  ['gamoshA', 'גמו"ש א׳', 'קצינים ונגדים'],
+  ['gamoshB', 'גמו"ש ב׳', 'קצינים'],
+];
 
-export function officerProgress(people: Person[]): Progress[] {
-  const officers = people.filter(isOfficer);
-  return EDU.map(([key, label]) => ({ key, label, yes: officers.filter((p) => p[key] === true).length, total: officers.length }));
+export function educationProgress(people: Person[]): Progress[] {
+  return EDU.map(([key, label, who]) => {
+    const pool = people.filter((p) => applicable(key, p));
+    return { key, label, who, yes: pool.filter((p) => p[key] === true).length, total: pool.length };
+  });
 }
 
 // ---------- 6. Officers' programs ----------

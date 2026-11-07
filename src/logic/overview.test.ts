@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BilletAssignment, Person } from '../domain/types';
 import { seedData } from '../store/seed';
-import { billetTurnover, officerPrograms, officerProgress, releasesByMonth } from './overview';
+import { billetTurnover, educationProgress, officerPrograms, releasesByMonth } from './overview';
 
 const today = '2026-11-07';
 const d = seedData();
@@ -19,16 +19,16 @@ describe('releasesByMonth', () => {
     P(6, { releaseDate: '2027-11-01' }), // outside the 12 months
     P(7, { releaseDate: '2026-12-15', rank: 'ncos', degree: 'רס"ל' }),
   ];
-  it('12 months from the current one, today onward, officers only by default', () => {
+  it('12 months from the current one, today onward, everyone by default', () => {
     const r = releasesByMonth(people, today);
     expect(r).toHaveLength(12);
     expect(r[0]).toMatchObject({ key: '2026-11', count: 1, from: today, to: '2026-11-30' });
-    expect(r[1]).toMatchObject({ key: '2026-12', count: 2, from: '2026-12-01', to: '2026-12-31' });
+    expect(r[1]).toMatchObject({ key: '2026-12', count: 3, from: '2026-12-01', to: '2026-12-31' });
     expect(r[11]).toMatchObject({ key: '2027-10', count: 1 });
-    expect(r.reduce((s, m) => s + m.count, 0)).toBe(4);
+    expect(r.reduce((s, m) => s + m.count, 0)).toBe(5);
   });
-  it('can include everyone', () => {
-    expect(releasesByMonth(people, today, 12, false)[1].count).toBe(3);
+  it('can be limited to officers', () => {
+    expect(releasesByMonth(people, today, 12, true)[1].count).toBe(2);
   });
   it('labels cross the year boundary', () => {
     const r = releasesByMonth([], today);
@@ -37,12 +37,15 @@ describe('releasesByMonth', () => {
   });
 });
 
-describe('officer progress and programs', () => {
-  it('counts only officers', () => {
-    const p = officerProgress(d.people);
+describe('education progress and officer programs', () => {
+  it('counts everyone the field applies to: officers + NCOs, and officers only for גמו"ש ב׳', () => {
+    const p = educationProgress(d.people);
     const officers = d.people.filter((x) => x.rank === 'officer').length;
-    expect(p.every((x) => x.total === officers)).toBe(true);
-    expect(p.find((x) => x.key === 'bachelor')?.yes).toBe(d.people.filter((x) => x.rank === 'officer' && x.bachelor).length);
+    const ncos = d.people.filter((x) => x.rank === 'ncos').length;
+    expect(p.find((x) => x.key === 'bachelor')?.total).toBe(officers + ncos);
+    expect(p.find((x) => x.key === 'gamoshA')?.total).toBe(officers + ncos);
+    expect(p.find((x) => x.key === 'gamoshB')?.total).toBe(officers);
+    expect(p.find((x) => x.key === 'bachelor')?.yes).toBe(d.people.filter((x) => (x.rank === 'officer' || x.rank === 'ncos') && x.bachelor).length);
   });
   it('programs: the five officer programs plus none; soldier program is excluded', () => {
     const r = officerPrograms(d.people);

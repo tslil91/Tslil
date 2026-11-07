@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IconCheck, IconChevron, IconEdit, IconMove, IconPlus, IconTable, IconTree, IconX } from '../../components/Icons';
 import { PageHeader, SearchBox } from '../../components/PageHeader';
 import { todayISO } from '../../domain/dates';
@@ -14,7 +14,6 @@ import { DateFilterDialog } from '../../components/DateFilterDialog';
 import { describeDateFilter } from '../../domain/dates';
 import { AddPersonDialog } from './AddPersonDialog';
 import { SectionsDialog } from './SectionsDialog';
-import { OverviewDialog } from './OverviewDialog';
 import { MoveDialog } from './MoveDialog';
 import { CellView, FieldEditor, patchDraft, toDraft } from './PersonCells';
 import { PeopleTree } from './PeopleTree';
@@ -39,8 +38,18 @@ export function PeopleView() {
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [managing, setManaging] = useState(false);
-  const [overview, setOverview] = useState(false);
   const [dateFilterFor, setDateFilterFor] = useState<FieldDef | null>(null);
+
+  // Opened from the overview screen: apply the filters it asked for (once).
+  const pending = useStore((st) => st.pendingPeopleFilter);
+  useEffect(() => {
+    if (!pending) return;
+    setFilters(pending.filters);
+    setQuery('');
+    setView('table');
+    useStore.getState().setPendingPeopleFilter(null);
+    useStore.getState().showToast(pending.message);
+  }, [pending]);
 
   const rows: PersonRow[] = useMemo(() => {
     const map = billetByPerson(s.assignments);
@@ -82,7 +91,6 @@ export function PeopleView() {
           ))}
         </div>
         <SearchBox value={query} onChange={setQuery} placeholder="חיפוש לפי שם או מ.א" />
-        <button type="button" className="btn" onClick={() => setOverview(true)}>תמונת מצב</button>
         <button type="button" className="btn" title="ייצוא האנשים המוצגים (לפי הסינון) לקובץ Excel"
           onClick={() => { void downloadWorkbook(`כוח-אדם-${today}`, [peopleSheet(groups.flatMap((g) => g.rows), s.sections, s.commanders)]); }}>ייצוא ל־Excel</button>
         <button type="button" className="btn" onClick={() => setImporting(true)}>ייבוא מ־Excel</button>
@@ -197,13 +205,6 @@ export function PeopleView() {
       {moving && <MoveDialog person={moving} onClose={() => setMoving(null)} />}
       {adding && <AddPersonDialog onClose={() => setAdding(false)} />}
       {managing && <SectionsDialog onClose={() => setManaging(false)} />}
-      {overview && (
-        <OverviewDialog
-          people={s.people} billets={s.billets} assignments={s.assignments} today={today}
-          onShowInTable={(f, message) => { setFilters(f); setQuery(''); setView('table'); setOverview(false); s.showToast(message); }}
-          onClose={() => setOverview(false)}
-        />
-      )}
       {dateFilterFor && (
         <DateFilterDialog
           title={dateFilterFor.label}

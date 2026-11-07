@@ -6,6 +6,7 @@ import type { Billet, Grant, Person } from '../domain/types';
 import { nextId, openAssignment, removeBillet, setPersonBillet } from '../logic/billets';
 import { addSection, deleteSection, renameSection } from '../logic/sections';
 import { applyPlacement, type PersonDraft, type PlacementKey } from '../logic/people';
+import type { Filters } from '../logic/people';
 import type { NewScenarioOp, ScenarioOp } from '../logic/simulator';
 import { seedData, type Data } from './seed';
 
@@ -15,6 +16,9 @@ interface Actions {
   toast: Toast | null;
   /** What-if changes of the simulator — never applied to the real data. */
   scenario: ScenarioOp[];
+  /** One-shot hand-off: filters the people table should open with (set by the overview screen). */
+  pendingPeopleFilter: { filters: Filters; message: string } | null;
+  setPendingPeopleFilter: (p: { filters: Filters; message: string } | null) => void;
   addScenarioOp: (op: NewScenarioOp) => void;
   removeScenarioOp: (id: number) => void;
   clearScenario: () => void;
@@ -46,6 +50,8 @@ export const useStore = create<AppState>()(
       ...seedData(),
       toast: null,
       scenario: [],
+      pendingPeopleFilter: null,
+      setPendingPeopleFilter: (pendingPeopleFilter) => set({ pendingPeopleFilter }),
       addScenarioOp: (op) => set((s) => ({ scenario: [...s.scenario, { ...op, id: nextId(s.scenario) } as ScenarioOp] })),
       removeScenarioOp: (id) => set((s) => ({ scenario: s.scenario.filter((o) => o.id !== id) })),
       clearScenario: () => set({ scenario: [] }),
