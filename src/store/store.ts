@@ -1,8 +1,11 @@
-import { create } from 'zustand';
+import { create, type StateCreator } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { todayISO } from '../domain/dates';
 import { normalizePerson } from '../domain/rules';
-import type { Billet, Grant, Person } from '../domain/types';
+import { pickData } from '../domain/data';
+import type { AppData, AuditEntry, Billet, Grant, Person } from '../domain/types';
+import type { AuditDraft } from '../logic/audit';
+import { deriveSectionHistory } from '../logic/history';
 import { nextId, openAssignment, removeBillet, setPersonBillet } from '../logic/billets';
 import { addSection, deleteSection, renameSection } from '../logic/sections';
 import { applyPlacement, type PersonDraft, type PlacementKey } from '../logic/people';
@@ -12,8 +15,26 @@ import { seedData, type Data } from './seed';
 
 interface Toast { id: number; message: string }
 
+/** Set by actions that replace everything (restore): the tracker then logs this instead of a field-by-field diff. */
+export const trackerHooks: { override: AuditDraft[] | null } = { override: null };
+
+/** True once the app is connected to the server: shared data is then not kept in the browser. */
+export const runtime = { serverMode: false };
+
+const AUDIT_CAP = 5000;
+
 interface Actions {
   toast: Toast | null;
+  /** Local-mode change log (in server mode the server keeps it). */
+  audit: AuditEntry[];
+  /** Self-declared user name used in the change log and notes. There is no login. */
+  actor: string;
+  setActor: (name: string) => void;
+  appendAudit: (entries: AuditDraft[]) => void;
+  addNote: (personId: number, text: string) => void;
+  deleteNote: (id: number) => void;
+  /** Replace all shared data (restore from a backup, or load from the server). */
+  replaceData: (data: AppData, auditSummary?: string) => void;
   /** What-if changes of the simulator — never applied to the real data. */
   scenario: ScenarioOp[];
   /** One-shot hand-off: filters the people table should open with (set by the overview screen). */
@@ -44,11 +65,39 @@ interface Actions {
 
 export type AppState = Data & Actions;
 
-export const useStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+const creator: StateCreator<AppState, [['zustand/persist', unknown]]> = (set0, get) => {
+  /** Same as `set`, but keeps the dated section history in step whenever the people list changes. */
+  const set = ((partial: unknown, replace?: boolean) => {
+    const prev = get();
+    const patch = (typeof partial === 'function' ? (partial as (s: AppState) => Partial<AppState>)(prev) : partial) as Partial<AppState>;
+    if (patch.people && patch.people !== prev.people && !('sectionHistory' in patch)) {
+      patch.sectionHistory = deriveSectionHistory(prev.sectionHistory, patch.people, todayISO());
+    }
+    (set0 as (p: unknown, r?: boolean) => void)(patch, replace);
+  }) as typeof set0;
+  return {
+
       ...seedData(),
       toast: null,
+      audit: [],
+      actor: '',
+      setActor: (actor) => set({ actor: actor.trim().slice(0, 40) }),
+      appendAudit: (entries) => set((s) => {
+        const at = new Date().toISOString();
+        let id = nextId(s.audit);
+        const added = entries.map((e) => ({ ...e, id: id++, at, actor: s.actor || 'משתמש' }));
+        return { audit: [...s.audit, ...added].slice(-AUDIT_CAP) };
+      }),
+      addNote: (personId, text) => set((s) => {
+        const t = text.trim().slice(0, 2000);
+        if (!t) return {};
+        return { notes: [...s.notes, { id: nextId(s.notes), personId, text: t, createdAt: new Date().toISOString(), author: s.actor || 'משתמש' }] };
+      }),
+      deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+      replaceData: (data, auditSummary) => {
+        if (auditSummary) trackerHooks.override = [{ kind: 'system', entityId: 'system', personId: null, summary: auditSummary, details: [] }];
+        set({ ...data });
+      },
       scenario: [],
       pendingPeopleFilter: null,
       setPendingPeopleFilter: (pendingPeopleFilter) => set({ pendingPeopleFilter }),
@@ -115,15 +164,30 @@ export const useStore = create<AppState>()(
       saveGrant: (g) => set((s) => ({ grants: s.grants.some((x) => x.id === g.id) ? s.grants.map((x) => (x.id === g.id ? g : x)) : [...s.grants, g] })),
       deleteGrant: (id) => set((s) => ({ grants: s.grants.filter((g) => g.id !== id) })),
 
-      resetDemo: () => set({ ...seedData(), toast: null, scenario: [] }),
-    }),
-    {
-      name: 'personnel-billets-demo',
-      version: 1,
-      storage: createJSONStorage(() => localStorage),
-      partialize: ({ sections, people, commanders, billets, assignments, grants, scenario }) => ({ sections, people, commanders, billets, assignments, grants, scenario }),
+      resetDemo: () => {
+        trackerHooks.override = [{ kind: 'system', entityId: 'system', personId: null, summary: 'נתוני ההדגמה אופסו', details: [] }];
+        set({ ...seedData(), toast: null, scenario: [] });
+      },
+  };
+};
+
+export const useStore = create<AppState>()(
+  persist(creator, {
+    name: 'personnel-billets-demo',
+    version: 2,
+    storage: createJSONStorage(() => localStorage),
+    // In server mode the server is the source of truth: only per-user things stay in the browser.
+    partialize: (s) => (runtime.serverMode
+      ? ({ scenario: s.scenario, actor: s.actor } as Partial<AppState>)
+      : ({ ...pickData(s), scenario: s.scenario, audit: s.audit, actor: s.actor } as Partial<AppState>)),
+    migrate: (persisted, version) => {
+      const s = (persisted ?? {}) as Partial<AppState>;
+      if (version < 2) {
+        return { ...s, notes: s.notes ?? [], audit: [], actor: '', sectionHistory: deriveSectionHistory([], s.people ?? [], todayISO()) } as AppState;
+      }
+      return s as AppState;
     },
-  ),
+  }),
 );
 
 /** Helper used by validation: who currently sits on a billet. */

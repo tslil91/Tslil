@@ -19,8 +19,8 @@ export function SimulatorView() {
   const [pending, setPending] = useState<{ personId: number; billetId: number } | null>(null);
   const date = addDays(today, offset);
 
-  const data = { people: s.people, billets: s.billets, assignments: s.assignments, sections: s.sections, commanders: s.commanders };
-  const snap = useMemo(() => snapshot(data, s.scenario, date), [s.people, s.billets, s.assignments, s.sections, s.commanders, s.scenario, date]);
+  const data = { people: s.people, billets: s.billets, assignments: s.assignments, sections: s.sections, commanders: s.commanders, sectionHistory: s.sectionHistory };
+  const snap = useMemo(() => snapshot(data, s.scenario, date), [s.people, s.billets, s.assignments, s.sections, s.commanders, s.sectionHistory, s.scenario, date]);
   const points = useMemo(() => changePoints(data, s.scenario).map((d) => daysBetween(today, d)).filter((o) => o > -RANGE && o < RANGE), [s.assignments, s.people, s.scenario, today]);
 
   const selectedOnBench = selected !== null && snap.bench.some((b) => b.person.id === selected) ? selected : null;

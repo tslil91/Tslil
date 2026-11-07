@@ -87,3 +87,52 @@ export interface Grant {
   basis: GrantBasis;
   enteredAt: ISODate;
 }
+
+/** A free-text note on a person. `createdAt` is a full ISO date-time. */
+export interface Note {
+  id: number;
+  personId: number;
+  text: string;
+  createdAt: string;
+  author: string;
+}
+
+/** Which section a person belonged to during a period (null = directly under the head). Half-open [start, end). */
+export interface SectionPeriod {
+  id: number;
+  personId: number;
+  sectionId: SectionId | null;
+  start: ISODate;
+  end: ISODate | null;
+}
+
+export type AuditKind = 'person' | 'section' | 'billet' | 'grant' | 'note' | 'commander' | 'system';
+
+export interface AuditDetail { label: string; from: string; to: string }
+
+/** One recorded change. `id` is assigned by whoever stores it (the server, or the local store). */
+export interface AuditEntry {
+  id: number;
+  /** ISO date-time. */
+  at: string;
+  /** Self-declared user name (there is no login). */
+  actor: string;
+  kind: AuditKind;
+  entityId: string;
+  /** Set when the change concerns a person (shown on the person page). */
+  personId: number | null;
+  summary: string;
+  details: AuditDetail[];
+}
+
+/** Everything that is shared between users and saved on the server. */
+export interface AppData {
+  sections: Section[];
+  people: Person[];
+  commanders: Commanders;
+  billets: Billet[];
+  assignments: BilletAssignment[];
+  grants: Grant[];
+  notes: Note[];
+  sectionHistory: SectionPeriod[];
+}

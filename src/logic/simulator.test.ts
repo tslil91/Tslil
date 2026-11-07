@@ -87,3 +87,21 @@ describe('scenario', () => {
     expect(pts).toEqual([...pts].sort());
   });
 });
+
+describe('section history in the snapshot', () => {
+  it('past dates use the section the person belonged to then', () => {
+    const withHistory: SimData = {
+      ...data,
+      sections: [{ id: 's1', name: 'א' }, { id: 's2', name: 'ב' }],
+      people: data.people.map((p) => (p.id === 1 ? { ...p, sectionId: 's2' } : p)),
+      sectionHistory: [
+        { id: 1, personId: 1, sectionId: 's1', start: '1900-01-01', end: '2026-01-01' },
+        { id: 2, personId: 1, sectionId: 's2', start: '2026-01-01', end: null },
+      ],
+    };
+    const inGroup = (date: string, gid: string) => snapshot(withHistory, [], date).groups.find((g) => g.id === gid)!.people.some((x) => x.person.id === 1);
+    expect(inGroup('2025-06-01', 's1')).toBe(true);
+    expect(inGroup('2025-06-01', 's2')).toBe(false);
+    expect(inGroup('2026-06-01', 's2')).toBe(true);
+  });
+});

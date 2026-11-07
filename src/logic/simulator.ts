@@ -1,6 +1,7 @@
 import { daysBetween } from '../domain/dates';
 import { degreeIndex } from '../domain/rules';
-import type { Billet, BilletAssignment, Commanders, ISODate, Person, Section } from '../domain/types';
+import type { Billet, BilletAssignment, Commanders, ISODate, Person, Section, SectionPeriod } from '../domain/types';
+import { sectionAt } from './history';
 
 /**
  * A what-if change, kept apart from the real data.
@@ -57,6 +58,8 @@ export interface SimData {
   assignments: BilletAssignment[];
   sections: Section[];
   commanders: Commanders;
+  /** Dated section membership; without it everyone is shown in their current section. */
+  sectionHistory?: SectionPeriod[];
 }
 
 export interface BilletAtDate {
@@ -91,6 +94,7 @@ export interface Snapshot {
 export function snapshot(data: SimData, ops: ScenarioOp[], d: ISODate): Snapshot {
   const nameOf = (id: number) => data.people.find((p) => p.id === id)?.name ?? '';
   const all = applyScenario(data.assignments, ops, nameOf);
+  const history = data.sectionHistory ?? [];
   const presentIds = new Set(data.people.filter((p) => isPresent(p, d)).map((p) => p.id));
   const active = all.filter((a) => isActive(a, d) && (a.personId === null || presentIds.has(a.personId)));
   const billetOfPerson = new Map<number, BilletAssignment>();
@@ -105,7 +109,8 @@ export function snapshot(data: SimData, ops: ScenarioOp[], d: ISODate): Snapshot
   const view = (p: Person): PersonAtDate => {
     const a = billetOfPerson.get(p.id);
     const r = p.releaseDate ? daysBetween(d, p.releaseDate) : null;
-    const isCommander = data.commanders.org === p.id || (!!p.sectionId && data.commanders.sections[p.sectionId] === p.id);
+    const sec = sectionAt(history, p, d);
+    const isCommander = data.commanders.org === p.id || (!!sec && data.commanders.sections[sec] === p.id);
     return { person: p, billet: a?.billetId ?? null, releaseInDays: r !== null && r > 0 && r <= 60 ? r : null, isCommander, fromScenario: !!a && a.id >= SCENARIO_ID_BASE };
   };
   const present = data.people.filter((p) => presentIds.has(p.id));
@@ -113,7 +118,7 @@ export function snapshot(data: SimData, ops: ScenarioOp[], d: ISODate): Snapshot
   const groups = [{ id: 'org', name: 'מפקד הארגון וכפופים ישירות' }, ...data.sections].map((g) => ({
     id: g.id,
     name: g.name,
-    people: present.filter((p) => (p.sectionId ?? 'org') === g.id).map(view).sort(order),
+    people: present.filter((p) => (sectionAt(history, p, d) ?? 'org') === g.id).map(view).sort(order),
   }));
   const bench = present.filter((p) => p.pop === 'keva' && !billetOfPerson.has(p.id)).map(view).sort(order);
   const filled = billets.filter((b) => b.occupant).length;

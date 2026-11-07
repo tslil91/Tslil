@@ -1,15 +1,8 @@
 import { normalizePerson } from '../domain/rules';
-import type { Billet, BilletAssignment, Commanders, Grant, Person, Section } from '../domain/types';
+import type { AppData, Billet, BilletAssignment, Grant, Person, SectionPeriod } from '../domain/types';
 
 /** Synthetic demo data only — no real personnel. */
-export interface Data {
-  sections: Section[];
-  people: Person[];
-  commanders: Commanders;
-  billets: Billet[];
-  assignments: BilletAssignment[];
-  grants: Grant[];
-}
+export type Data = AppData;
 
 type P = Omit<Person, 'program' | 'entryDate'> & Partial<Pick<Person, 'program' | 'entryDate'>>;
 const person = (p: P): Person => normalizePerson({ program: null, entryDate: null, ...p });
@@ -84,6 +77,14 @@ export function seedData(): Data {
     g(9, 'voucher', null, null, null, 800, 'net', '2026-10-01'),
   ];
 
+  // everyone starts in their current section "since always"; two demo moves make the history visible
+  let hid = 0;
+  const sectionHistory: SectionPeriod[] = people.flatMap((p): SectionPeriod[] => {
+    if (p.id === 3) return [{ id: ++hid, personId: 3, sectionId: 's2', start: '1900-01-01', end: '2026-03-01' }, { id: ++hid, personId: 3, sectionId: 's1', start: '2026-03-01', end: null }];
+    if (p.id === 7) return [{ id: ++hid, personId: 7, sectionId: 's1', start: '1900-01-01', end: '2025-09-01' }, { id: ++hid, personId: 7, sectionId: 's3', start: '2025-09-01', end: null }];
+    return [{ id: ++hid, personId: p.id, sectionId: p.sectionId, start: '1900-01-01', end: null }];
+  });
+
   return {
     sections: [
       { id: 's1', name: 'מדור מבצעים' },
@@ -95,5 +96,7 @@ export function seedData(): Data {
     billets,
     assignments,
     grants,
+    notes: [],
+    sectionHistory,
   };
 }
