@@ -75,3 +75,54 @@ The domain model, field registry, filter/sort engine, commands and snapshot engi
 4. Is Excel export of the filtered view enough, or is import also required?
 5. Are printed section rosters needed, and in what format?
 6. Should the simulator support comparing two dates / saving named scenarios in the first desktop release?
+
+---
+
+## 8. Revision 2 — after review (supersedes the matching parts above)
+
+### 8.1 Confirmed domain rules
+| Population | Allowed type | Degrees (low → high) |
+|---|---|---|
+| חובה | חייל | טוראי, רב"ט, סמל, סמ"ר |
+| חובה | קצין | סג"מ, סגן |
+| קבע | קצין | סגן, סרן, רס"ן, סא"ל, אל"מ |
+| קבע | נגד | סמ"ר, רס"ל, רס"ר, רס"מ, רס"ב, רנ"ג |
+| אזרח | אזרח | אע"צ, אע"ב |
+
+- Population is now **3 values**: קבע / חובה / אזרח. Choosing a population limits the type; choosing the type limits the degree (enforced in add and edit forms).
+- **Only קבע have a billet** (number or על תקני); billet and entry-to-keva are hidden for חובה / אזרח.
+- **The organization commander is not a section commander** and sits at the organization level (no section). Appointing an org commander removes any section command and section membership; moving them into a section removes the org command.
+- **דמ"ח dates are entered manually** (no calculation rules).
+- Global degree order for sorting (high → low): אל"מ, סא"ל, רס"ן, סרן, סגן, סג"מ, רנ"ג, רס"ב, רס"מ, רס"ר, רס"ל, סמ"ר, סמל, רב"ט, טוראי, אע"ב, אע"צ. *Assumption:* civilians are ranked below uniformed personnel and אע"ב above אע"צ; "רס"ר" appeared twice in the list and was treated as one entry.
+
+### 8.2 Personnel view (desktop)
+- Default order inside every group: **commander first**, then **degree high → low**. Column sorting still works; a "חזרה לסדר דרגות" button restores the default. The commander stays pinned first in any sort.
+- Summary side panel **removed**; table uses the full width.
+- **Table / עץ היררכי toggle**: the tree shows the org commander on top, then one column per group (directly-subordinate + each section) with the section commander card and members by degree.
+- Every row starts (right side, RTL) with two buttons: **⇅ change location** and **✎ edit**. Rows are no longer clickable.
+- **Change location = floating dialog**: radio-style choices — מפקד הארגון, כפוף ישירות, איש צוות ב־<מדור>, מפקד <מדור>; shows who will be replaced and warns when the org is left without a commander.
+- **Inline editing**: ✎ turns the row into editors (text / number / date / select), with dependent selects (population → type → degree), applicability rules, validation (required name & מ.א, unique מ.א, billet not already taken), ✔ save / ✕ cancel.
+- **Add personnel** opens a dialog whose fields appear according to population/type; same validation; new person lands in the chosen location.
+
+### 8.3 Billets view (desktop)
+- History is **not a column**: a ▾ button at the start of each row opens the history below the row.
+- **Add billet** = button → floating dialog (number, internal/external, fixed/temporary, דמ"ח).
+- **Delete** = trash button → confirmation dialog (warns if the billet is occupied).
+- Columns 2–4 (פנימי/חיצוני, קבוע/זמני, דמ"ח) are **editable in place** with dropdowns; every change shows a confirmation toast (and goes to the audit log in production).
+
+### 8.4 Design options and color palettes
+Implemented as two theme tokens (`design` × `palette`) — CSS variables + layout classes, so any combination works and switching is a config change, not a rewrite.
+
+| Design | Description | Best for |
+|---|---|---|
+| **א׳ · פיקוד** | Dark side rail, medium radius, 44px rows | Recommended default; balanced |
+| **ב׳ · מרחב** | Light top navigation, large headings, floating table card, 52px rows | Occasional users, presentations |
+| **ג׳ · דחוס** | Narrow icon rail, square corners, 36px rows, zebra stripes | Power users handling many people |
+
+| Palette | Navigation | Primary | Accent | Background |
+|---|---|---|---|---|
+| **1 · כחול צי וענבר** | #12263A | #12263A | #B4531A | #F3F5F7 |
+| **2 · ירוק זית** | #2E3A26 | #3E5232 | #8A5F0E | #F4F3EE |
+| **3 · צפחה וטורקיז** | #1E2A32 | #0B6A73 | #0B6A73 | #F5F7F8 |
+
+Semantic colors (קבע blue, חובה amber, אזרח purple, yes green, vacant red) stay the same in all palettes so meaning never changes with the theme. All text/background pairs target WCAG AA (4.5:1).

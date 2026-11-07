@@ -100,7 +100,10 @@ Backend later: PostgreSQL (`daterange` + exclusion constraints for non-overlappi
 9. **Polish** — accessibility, performance with 1,000 people, Playwright E2E, demo script. *(2–3 d)*
 10. **Post-MVP** — desktop table layout, Excel import/export, backend + roles + audit log, drag & drop.
 
-## 7. Open questions
+## 7. Answered (Nov 2026)
+- Degree lists per population/type, the 3rd population (אזרח), billets only for קבע, org commander not a section commander, manual דמ"ח dates — see `docs/DESKTOP.md` §8.1 (applies to mobile and desktop).
+
+## 8. Still open
 1. Exact degree lists per type (especially civilians) and whether a degree history is needed.
 2. Do civilians and soldiers have a billet? (Mock: billet and entry-to-keva shown only for KEVA.)
 3. Is `על תקני` only for KEVA, or also for mandatory soldiers without a billet (v1's "Mandatory-No-Billet")?
