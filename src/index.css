@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Design ג׳ · דחוס with palette 1 · כחול צי וענבר */
+@theme {
+  --font-sans: "Heebo", system-ui, sans-serif;
+  --color-nav: #12263a;
+  --color-primary: #12263a;
+  --color-accent: #b4531a;
+  --color-tint: #e3eefb;
+  --color-bg: #f3f5f7;
+  --color-surface: #ffffff;
+  --color-head: #f1f5f9;
+  --color-group: #e8eef5;
+  --color-line: #e2e8f0;
+  --color-line2: #cbd5e1;
+  --color-ink: #12263a;
+  --color-muted: #475569;
+  --color-soft: #eef2f6;
+  --color-danger: #8a2d1b;
+  --color-danger-soft: #fde4e0;
+}
+
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-sans); }
+button { cursor: pointer; }
+
+@layer components {
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 32px; padding: 0 12px; border-radius: 4px; white-space: nowrap;
+    background: var(--color-soft); color: var(--color-ink); font-size: 13px; font-weight: 600;
+  }
+  .btn:hover { filter: brightness(0.96); }
+  .btn:focus-visible, .icon-btn:focus-visible, .seg:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-on { background: var(--color-primary); color: #fff; }
+  .btn-danger { background: var(--color-danger); color: #fff; }
+  .icon-btn {
+    width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 4px; color: var(--color-ink);
+  }
+  .icon-btn:hover { background: var(--color-soft); }
+  .icon-btn-ok { background: var(--color-primary); color: #fff; }
+  .icon-btn-ok:hover { background: var(--color-primary); filter: brightness(1.15); }
+  .icon-btn-danger { color: var(--color-danger); }
+  .icon-btn-danger:hover { background: var(--color-danger-soft); }
+  .input {
+    box-sizing: border-box; width: 100%; height: 30px; padding: 0 6px;
+    border: 1px solid var(--color-line2); border-radius: 4px; background: #fff; font-size: 13px; color: var(--color-ink);
+  }
+  .input-lg { height: 38px; font-size: 14px; padding: 0 10px; }
+  .seg {
+    flex: 1; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 4px; background: var(--color-soft); font-size: 14px; font-weight: 600;
+  }
+  .seg[aria-pressed="true"] { background: var(--color-primary); color: #fff; }
+  .chip {
+    display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 3px;
+    font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .chip-keva { background: #dce8f7; color: #1b3a66; }
+  .chip-hova { background: #fbe9c6; color: #6b3f00; }
+  .chip-civ { background: #eadcf3; color: #55286f; }
+  .chip-neutral { background: #e2e8f0; color: #1e293b; }
+  .chip-bench { background: #e4e3fa; color: #2f2a8c; }
+  .chip-cmd { background: var(--color-primary); color: #fff; }
+  .chip-yes { background: #d9f2e3; color: #14532d; }
+  .chip-no { background: var(--color-soft); color: var(--color-muted); }
+  .chip-accent { background: var(--color-accent); color: #fff; }
+  .chip-voucher { background: #dce8f7; color: #1b3a66; }
+  .chip-grant { background: #d9f2e3; color: #14532d; }
+  .chip-incentive { background: #fbe9c6; color: #6b3f00; }
+  .label { font-size: 12px; font-weight: 600; color: var(--color-muted); }
+  .zebra > :nth-child(even) > .row, .zebra > .row:nth-child(even) { background: var(--color-bg); }
+  .row { background: var(--color-surface); }
+  .row:hover { background: var(--color-soft) !important; }
+  .row-active { background: var(--color-tint) !important; }
+}
