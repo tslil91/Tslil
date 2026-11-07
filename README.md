@@ -37,7 +37,7 @@ The field registry (`logic/fields.ts`) drives the people table columns, filters,
 
 | View | State |
 |---|---|
-| כוח אדם | Table grouped by section (commander first, degree high → low), column sort & filters, column groups, inline edit, move / appoint via dialog, add person, hierarchy tree, section management (add / rename / delete), date-column filters (year, month, between two dates, quick presets), , Excel export / import |
+| כוח אדם | Table grouped by section (commander first, degree high → low), column sort & filters, column groups, inline edit, move / appoint via dialog, add person, hierarchy tree, section management (add / rename / delete), date-column filters (year, month, between two dates, quick presets), Excel export / import |
 | תקנים | Query & filters, inline edit of internal/external, fixed/temporary and דמ"ח, history dropdown, add and delete with confirmation, Excel export (with history sheet) / import |
 | מענקים ותמריצים | Per-person history (latest first), filters & sort, add, edit and delete (for correcting mistakes), Excel export / import |
 | תמונת מצב | Separate screen: upcoming releases per month (everyone), education & certification (everyone the field applies to), programs (officers only), billet turnover; clicking a chart opens the people table already filtered |
