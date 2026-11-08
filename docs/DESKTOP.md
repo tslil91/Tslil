@@ -24,7 +24,7 @@ The domain model, field registry, filter/sort engine, commands and snapshot engi
 │ (right)    │  Toolbar: section filter · column groups · clear filters  │ panel
 │            │  ┌───────────────────────────────────────────────────┐    │ 320px
 │  כוח אדם   │  │ sticky header: sort + filter per column           │    │ (left)
-│  תקנים     │  │ ▾ ישירות למפקד הארגון (n)                         │    │
+│  תקנים     │  │ ▾ ישירות לרע"ן (n)                         │    │
 │  ─────     │  │ ▾ מדור מבצעים (n) · מפקד: …                       │    │
 │  סימולטור  │  │   row … row …   (name column sticky on the right) │    │
 │            │  └───────────────────────────────────────────────────┘    │
@@ -100,7 +100,7 @@ The domain model, field registry, filter/sort engine, commands and snapshot engi
 - Summary side panel **removed**; table uses the full width.
 - **Table / עץ היררכי toggle**: the tree shows the org commander on top, then one column per group (directly-subordinate + each section) with the section commander card and members by degree.
 - Every row starts (right side, RTL) with two buttons: **⇅ change location** and **✎ edit**. Rows are no longer clickable.
-- **Change location = floating dialog**: radio-style choices — מפקד הארגון, כפוף ישירות, איש צוות ב־<מדור>, מפקד <מדור>; shows who will be replaced and warns when the org is left without a commander.
+- **Change location = floating dialog**: radio-style choices — רע"ן, כפוף ישירות, איש צוות ב־<מדור>, מפקד <מדור>; shows who will be replaced and warns when the org is left without a commander.
 - **Inline editing**: ✎ turns the row into editors (text / number / date / select), with dependent selects (population → type → degree), applicability rules, validation (required name & מ.א, unique מ.א, billet not already taken), ✔ save / ✕ cancel.
 - **Add personnel** opens a dialog whose fields appear according to population/type; same validation; new person lands in the chosen location.
 
@@ -194,3 +194,14 @@ Grant   id, personId, type (VOUCHER שובר | GRANT מענק | INCENTIVE תמר
 - Two users saving at the same moment: the second must repeat the change (by design).
 - The server keeps all data and the change log in memory: fine for thousands of people and hundreds of thousands of log entries, not millions.
 - Plain HTTP (no TLS); put an internal reverse proxy in front if TLS is required.
+
+
+---
+
+## 12. Revision 5 — new degrees and a renamed role
+
+- **New degrees:** `קמ"א` for **חובה** officers and `קא"ב` for **קבע** officers. Both are officer degrees (so education, גמו"ש and דמ"ח fields apply). In the global order (used for "high → low" sorting) they sit just below the other officer degrees and above `רנ"ג`, `קא"ב` above `קמ"א`:
+  `… רנ"ג < קמ"א < קא"ב < סג"מ < סגן < סרן < רס"ן < סא"ל < אל"מ`.
+  Lists per population and type: חובה-קצין `קמ"א, סג"מ, סגן`; קבע-קצין `קא"ב, סגן, סרן, רס"ן, סא"ל, אל"מ`. To change a degree list or the order later, edit `DEGREES` and `LADDER` in `src/domain/rules.ts` (one place; the filters, editors, import, backup validation and data checks all read it).
+- **Role name:** the head of the organization is now labelled **רע"ן** everywhere in the interface (table chip, tree, dialogs, messages, change log, data checks, Excel export column "תפקיד"). Only the wording changed; stored data is untouched. Older change-log lines keep the wording they were written with. The section commander is still "מפקד המדור".
+- **Upgrading** safely: see the "Upgrading without overwriting data" section of `INSTALL.md`.

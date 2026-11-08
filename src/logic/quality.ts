@@ -20,9 +20,9 @@ export function dataIssues(d: AppData, today: ISODate): Issue[] {
   const name = (id: number) => people.get(id)?.name ?? `#${id}`;
 
   // ----- organization
-  if (d.commanders.org === null) add('org-no-cmd', 'warn', 'לא מונה מפקד לארגון', { kind: 'org' });
-  else if (!people.has(d.commanders.org)) add('org-cmd-missing', 'error', 'מפקד הארגון אינו קיים ברשימת האנשים', { kind: 'org' });
-  else if (people.get(d.commanders.org)!.sectionId !== null) add('org-cmd-section', 'error', `מפקד הארגון (${name(d.commanders.org)}) משויך למדור`, { kind: 'person', id: d.commanders.org });
+  if (d.commanders.org === null) add('org-no-cmd', 'warn', 'לא מונה רע"ן', { kind: 'org' });
+  else if (!people.has(d.commanders.org)) add('org-cmd-missing', 'error', 'רע"ן אינו קיים ברשימת האנשים', { kind: 'org' });
+  else if (people.get(d.commanders.org)!.sectionId !== null) add('org-cmd-section', 'error', `רע"ן (${name(d.commanders.org)}) משויך למדור`, { kind: 'person', id: d.commanders.org });
   for (const s of d.sections) {
     const c = d.commanders.sections[s.id] ?? null;
     if (c === null) add(`sec-no-cmd-${s.id}`, 'warn', `ל${s.name} לא מונה מפקד`, { kind: 'section', id: s.id });

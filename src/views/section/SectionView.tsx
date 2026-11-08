@@ -20,7 +20,7 @@ export function SectionView({ id }: { id?: string | null }) {
   const section = sectionId ? s.sections.find((x) => x.id === sectionId) ?? null : null;
   const isOrg = id === 'org';
   const exists = isOrg || !!section;
-  const name = isOrg ? 'מפקד הארגון וכפופים ישירות' : section?.name ?? '';
+  const name = isOrg ? 'רע"ן וכפופים ישירות' : section?.name ?? '';
 
   const billetOf = useMemo(() => billetByPerson(s.assignments), [s.assignments]);
   const members: PersonRow[] = useMemo(() => s.people.filter((p) => p.sectionId === sectionId).map((p) => ({ ...p, billet: billetOf.get(p.id) ?? null })), [s.people, sectionId, billetOf]);
@@ -52,7 +52,7 @@ export function SectionView({ id }: { id?: string | null }) {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <PageHeader title={name} subtitle={`${plural(members.length, 'אדם אחד', 'אנשים')} · ${commander ? `${isOrg ? 'מפקד הארגון' : 'מפקד המדור'}: ${commander.degree} ${commander.name}` : isOrg ? 'לא מונה מפקד ארגון' : 'לא מונה מפקד מדור'}`}>
+      <PageHeader title={name} subtitle={`${plural(members.length, 'אדם אחד', 'אנשים')} · ${commander ? `${isOrg ? 'רע"ן' : 'מפקד המדור'}: ${commander.degree} ${commander.name}` : isOrg ? 'לא מונה רע"ן' : 'לא מונה מפקד מדור'}`}>
         <a href="#/people" className="btn no-underline">‹ חזרה לכוח אדם</a>
         <button type="button" className="btn" onClick={showInTable}>פתיחה בטבלה</button>
         <button type="button" className="btn" onClick={() => void downloadWorkbook(`section-${today}`, [peopleSheet(sorted, s.sections, s.commanders)])}>ייצוא ל־Excel</button>
@@ -74,7 +74,7 @@ export function SectionView({ id }: { id?: string | null }) {
                 {sorted.map((m) => (
                   <li key={m.id} className="flex items-center gap-2 border-b border-line py-1.5 text-[13px]">
                     <a href={personHref(m.id)} className="min-w-[110px] font-bold text-ink underline">{m.name}</a>
-                    {m.id === cmdId && <span className="chip chip-cmd">{isOrg ? 'מפקד הארגון' : 'מפקד המדור'}</span>}
+                    {m.id === cmdId && <span className="chip chip-cmd">{isOrg ? 'רע"ן' : 'מפקד המדור'}</span>}
                     <span className="flex-1 text-muted">{m.degree} · {RANK_LABELS[m.rank]}</span>
                     <span className={`chip chip-${m.pop}`}>{POP_LABELS[m.pop]}</span>
                     {m.pop === 'keva' && (m.billet ? <a className="chip chip-neutral no-underline" href={`#/billets?q=${m.billet}`}>תקן {m.billet}</a> : <span className="chip chip-bench">על תקני</span>)}

@@ -33,9 +33,9 @@ export function PeopleTree({ people, onMove }: { people: Person[]; onMove: (p: P
     <div className="mx-3.5 mb-3 min-h-0 flex-1 overflow-auto rounded border border-line bg-surface p-5">
       <div className="flex flex-col items-center">
         <div className="flex min-w-[280px] flex-col items-center gap-1 rounded border-2 border-primary px-4 py-3">
-          <span className="label">מפקד הארגון</span>
+          <span className="label">רע"ן</span>
           {top ? <a href={personHref(top.id)} className="text-[17px] font-bold text-ink no-underline hover:underline">{top.name}</a> : <span className="text-[17px] font-bold">לא מונה</span>}
-          <span className="text-[13px] text-muted">{top ? `${top.degree} · ${RANK_LABELS[top.rank]}` : 'יש למנות מפקד ארגון'}</span>
+          <span className="text-[13px] text-muted">{top ? `${top.degree} · ${RANK_LABELS[top.rank]}` : 'יש למנות רע"ן'}</span>
           {top && <button type="button" className="btn mt-1 h-7" onClick={() => onMove(top)}>שינוי מיקום</button>}
         </div>
         <div className="h-5 w-0.5 bg-line2" />

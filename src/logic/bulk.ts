@@ -29,7 +29,7 @@ export function bulkMove(people: Person[], cmd: Commanders, ids: number[], dest:
     const p = ps.find((x) => x.id === id);
     if (!p) continue;
     if (p.sectionId === target) { unchanged++; continue; }
-    if (cm.org === p.id && target !== null) { skipped.push({ id: p.id, name: p.name, reason: 'מפקד הארגון אינו משויך למדור' }); continue; }
+    if (cm.org === p.id && target !== null) { skipped.push({ id: p.id, name: p.name, reason: 'רע"ן אינו משויך למדור' }); continue; }
     if (p.sectionId && cm.sections[p.sectionId] === p.id) commandsEnded++;
     const r = applyPlacement(ps, cm, p.id, target === null ? 'org' : `sec:${target}`);
     ps = r.people; cm = r.commanders; moved++;

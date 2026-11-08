@@ -50,9 +50,9 @@ Key modelling decisions
 ## 2. Views
 
 ### 2.1 כוח אדם (home)
-- Groups: **"ישירות למפקד הארגון"** first, then each מדור; header shows name, commander, count, collapse arrow.
+- Groups: **"ישירות לרע"ן"** first, then each מדור; header shows name, commander, count, collapse arrow.
 - Person card (collapsed): name, commander badge, מ.א · type · degree, population chip, billet chip (`תקן N` / `על תקני`), release date. Tap → expands to **all** applicable fields (2-column grid).
-- Actions in the expanded card: **העבר למדור** (bottom sheet of sections + "directly under head"), **מנה/הסר למפקד המדור**, **מנה/הסר למפקד הארגון**.
+- Actions in the expanded card: **העבר למדור** (bottom sheet of sections + "directly under head"), **מנה/הסר למפקד המדור**, **מנה/הסר לרע"ן**.
 - **Search** (name / מ.א), **Filter sheet**, **Sort sheet** (direction toggle), removable chips of active filters. Sorting happens inside each section.
 - Filter/sort cover **every field**: enums (population, type, degree, section, billet / על תקני), yes/no (bachelor, masters, גמו"ש א׳/ב׳, דמ"ח ג׳/ב׳/א׳), and dates (entry, release, first-submit and eligibility dates) with presets *past / within 90 days / within a year*. Free date ranges can follow later.
 - Fields not applicable to a person are `null` and never match a yes/no filter.

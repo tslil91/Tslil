@@ -92,7 +92,7 @@ export function diffData(prev: AppData, next: AppData): AuditDraft[] {
     if (from !== null) out.push(draft('commander', entity, from, `${nameOf(from)} הוסר/ה מתפקיד ${label}`));
     if (to !== null) out.push(draft('commander', entity, to, `${nameOf(to)} מונה/תה ל${label}`));
   };
-  cmdChange('מפקד הארגון', prev.commanders.org, next.commanders.org, 'org');
+  cmdChange('רע"ן', prev.commanders.org, next.commanders.org, 'org');
   for (const s of next.sections) if (prevSec.has(s.id)) cmdChange(`מפקד ${s.name}`, prev.commanders.sections[s.id] ?? null, next.commanders.sections[s.id] ?? null, s.id);
 
   // ----- billets

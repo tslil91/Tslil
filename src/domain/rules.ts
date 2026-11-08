@@ -13,14 +13,14 @@ export const RANKS_BY_POP: Record<Population, RankType[]> = {
 /** Closed degree lists per population + type, low → high. */
 export const DEGREES: Record<string, string[]> = {
   'hova-soldier': ['טוראי', 'רב"ט', 'סמל', 'סמ"ר'],
-  'hova-officer': ['סג"מ', 'סגן'],
-  'keva-officer': ['סגן', 'סרן', 'רס"ן', 'סא"ל', 'אל"מ'],
+  'hova-officer': ['קמ"א', 'סג"מ', 'סגן'],
+  'keva-officer': ['קא"ב', 'סגן', 'סרן', 'רס"ן', 'סא"ל', 'אל"מ'],
   'keva-ncos': ['סמ"ר', 'רס"ל', 'רס"ר', 'רס"מ', 'רס"ב', 'רנ"ג'],
   'civ-civilian': ['אע"צ', 'אע"ב'],
 };
 
-/** Global degree order, low → high (civilians below uniformed personnel). */
-export const LADDER = ['אע"צ', 'אע"ב', 'טוראי', 'רב"ט', 'סמל', 'סמ"ר', 'רס"ל', 'רס"ר', 'רס"מ', 'רס"ב', 'רנ"ג', 'סג"מ', 'סגן', 'סרן', 'רס"ן', 'סא"ל', 'אל"מ'];
+/** Global degree order, low → high (civilians below uniformed personnel). קמ"א and קא"ב sit just below the other officer degrees. */
+export const LADDER = ['אע"צ', 'אע"ב', 'טוראי', 'רב"ט', 'סמל', 'סמ"ר', 'רס"ל', 'רס"ר', 'רס"מ', 'רס"ב', 'רנ"ג', 'קמ"א', 'קא"ב', 'סג"מ', 'סגן', 'סרן', 'רס"ן', 'סא"ל', 'אל"מ'];
 
 export const PROGRAMS: Partial<Record<RankType, string[]>> = {
   soldier: ['מט"ל'],

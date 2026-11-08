@@ -30,7 +30,7 @@ export function MoveDialog({ person, onClose }: { person: Person; onClose: () =>
   if (replaced !== null && replaced !== person.id && choice !== current) {
     warnings.push(`${nameOf(replaced)} יפסיק/תפסיק לשמש ${placementLabel(choice, sections)} ויישאר/תישאר ${choice === 'orgcmd' ? 'כפוף/ה ישירות' : 'במדור'}.`);
   }
-  if (current === 'orgcmd' && choice !== 'orgcmd') warnings.push('לארגון לא יהיה מפקד עד שימונה מפקד חדש.');
+  if (current === 'orgcmd' && choice !== 'orgcmd') warnings.push('לא יהיה רע"ן עד שימונה רע"ן חדש.');
   if (current.startsWith('cmd:') && choice !== current) {
     const secName = sections.find((x) => x.id === current.slice(4))?.name ?? '';
     warnings.push(`ל${secName} לא יהיה מפקד עד שימונה מפקד חדש.`);

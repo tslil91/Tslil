@@ -115,7 +115,7 @@ export function snapshot(data: SimData, ops: ScenarioOp[], d: ISODate): Snapshot
   };
   const present = data.people.filter((p) => presentIds.has(p.id));
   const order = (a: PersonAtDate, b: PersonAtDate) => Number(b.isCommander) - Number(a.isCommander) || degreeIndex(b.person.degree) - degreeIndex(a.person.degree);
-  const groups = [{ id: 'org', name: 'מפקד הארגון וכפופים ישירות' }, ...data.sections].map((g) => ({
+  const groups = [{ id: 'org', name: 'רע"ן וכפופים ישירות' }, ...data.sections].map((g) => ({
     id: g.id,
     name: g.name,
     people: present.filter((p) => (sectionAt(history, p, d) ?? 'org') === g.id).map(view).sort(order),

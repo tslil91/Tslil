@@ -44,8 +44,8 @@ export function AddPersonDialog({ onClose, person }: { onClose: () => void; pers
         ))}
         <div className="flex flex-col gap-1">
           <label htmlFor="np-section" className="label">מיקום בארגון</label>
-          <select id="np-section" className="input input-lg" disabled={isOrgCmd} title={isOrgCmd ? 'מפקד הארגון אינו משויך למדור' : undefined} value={draft.sectionId ?? ''} onChange={(e) => change({ sectionId: e.target.value || null })}>
-            <option value="">כפוף ישירות למפקד הארגון</option>
+          <select id="np-section" className="input input-lg" disabled={isOrgCmd} title={isOrgCmd ? 'רע"ן אינו משויך למדור' : undefined} value={draft.sectionId ?? ''} onChange={(e) => change({ sectionId: e.target.value || null })}>
+            <option value="">כפוף ישירות לרע"ן</option>
             {s.sections.map((sec) => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
           </select>
         </div>

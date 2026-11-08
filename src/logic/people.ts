@@ -78,7 +78,7 @@ export interface PeopleGroup {
 export function groupPeople(rows: PersonRow[], sections: Section[], cmd: Commanders, sort: SortState, all: Person[]): PeopleGroup[] {
   const byId = new Map(all.map((p) => [p.id, p]));
   const defs = [
-    { id: 'org' as const, name: 'מפקד הארגון וכפופים ישירות', commanderLabel: 'מפקד הארגון', cmdId: cmd.org, match: (r: PersonRow) => r.sectionId === null },
+    { id: 'org' as const, name: 'רע"ן וכפופים ישירות', commanderLabel: 'רע"ן', cmdId: cmd.org, match: (r: PersonRow) => r.sectionId === null },
     ...sections.map((s) => ({ id: s.id, name: s.name, commanderLabel: 'מפקד המדור', cmdId: cmd.sections[s.id] ?? null, match: (r: PersonRow) => r.sectionId === s.id })),
   ];
   return defs.map((g) => {
@@ -105,8 +105,8 @@ export function placementOf(p: Person, cmd: Commanders): PlacementKey {
 }
 
 export function placementLabel(key: PlacementKey, sections: Section[]): string {
-  if (key === 'orgcmd') return 'מפקד הארגון';
-  if (key === 'org') return 'כפוף ישירות למפקד הארגון';
+  if (key === 'orgcmd') return 'רע"ן';
+  if (key === 'org') return 'כפוף ישירות לרע"ן';
   const [kind, id] = key.split(':');
   const name = sections.find((s) => s.id === id)?.name ?? id;
   return kind === 'cmd' ? `מפקד ${name}` : `איש צוות ב${name}`;

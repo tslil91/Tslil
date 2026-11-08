@@ -5,8 +5,8 @@ import type { Person } from './types';
 describe('degree lists', () => {
   it('matches the confirmed lists per population and type', () => {
     expect(degreesFor('hova', 'soldier')).toEqual(['טוראי', 'רב"ט', 'סמל', 'סמ"ר']);
-    expect(degreesFor('hova', 'officer')).toEqual(['סג"מ', 'סגן']);
-    expect(degreesFor('keva', 'officer')).toEqual(['סגן', 'סרן', 'רס"ן', 'סא"ל', 'אל"מ']);
+    expect(degreesFor('hova', 'officer')).toEqual(['קמ"א', 'סג"מ', 'סגן']);
+    expect(degreesFor('keva', 'officer')).toEqual(['קא"ב', 'סגן', 'סרן', 'רס"ן', 'סא"ל', 'אל"מ']);
     expect(degreesFor('keva', 'ncos')).toEqual(['סמ"ר', 'רס"ל', 'רס"ר', 'רס"מ', 'רס"ב', 'רנ"ג']);
     expect(degreesFor('civ', 'civilian')).toEqual(['אע"צ', 'אע"ב']);
     expect(degreesFor('keva', 'soldier')).toEqual([]);

@@ -36,7 +36,7 @@ export const PEOPLE_REQUIRED = [H.mid, H.name, H.pop, H.rank, H.degree];
 
 export function peopleSheet(rows: PersonRow[], sections: Section[], cmd: Commanders): SheetSpec {
   const secName = (id: string | null) => (id ? sections.find((s) => s.id === id)?.name ?? '' : ORG_LEVEL);
-  const role = (p: PersonRow) => (cmd.org === p.id ? 'מפקד הארגון' : p.sectionId && cmd.sections[p.sectionId] === p.id ? 'מפקד המדור' : null);
+  const role = (p: PersonRow) => (cmd.org === p.id ? 'רע"ן' : p.sectionId && cmd.sections[p.sectionId] === p.id ? 'מפקד המדור' : null);
   return {
     name: 'כוח אדם',
     columns: [
@@ -110,7 +110,7 @@ export function planPeopleImport(t: Table, ctx: PeopleCtx): ImportPlan<PersonDra
           if (!sec) { err(`מדור לא מוכר: "${s}"`); continue; }
           d.sectionId = sec.id;
         }
-        if (existing && ctx.commanders.org === existing.id && d.sectionId !== null) { err('מפקד הארגון אינו משויך למדור. שינוי מיקום של מפקד נעשה במערכת.'); continue; }
+        if (existing && ctx.commanders.org === existing.id && d.sectionId !== null) { err('רע"ן אינו משויך למדור. שינוי מיקום של מפקד נעשה במערכת.'); continue; }
       }
       if (r.has(H.billet)) {
         const raw = r.get(H.billet);

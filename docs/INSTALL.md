@@ -59,8 +59,17 @@
 - **מתוך המערכת:** כפתור "ניהול נתונים" בתפריט — הורדת קובץ גיבוי ושחזור מקובץ (השחזור שומר קודם עותק של המצב הנוכחי).
 - אפשר להעתיק את כל תיקיית `DATA_DIR` כגיבוי מלא (נתונים + יומן שינויים).
 
-### עדכון גרסה
-עצור את השרת, החלף את `server.mjs` ואת התיקייה `public/` בגרסה החדשה (אל תיגע ב־`DATA_DIR`), הפעל מחדש. משתמשים רק מרעננים את הדף.
+### עדכון גרסה — בלי לדרוס נתונים
+**עיקרון:** החבילה החדשה מכילה רק תוכנה — **אין בה נתונים ואין בה `config.cmd` / `config.env`**. לכן פריסת החבילה על התיקייה הישנה לא יכולה לדרוס את הנתונים או את ההגדרות שלכם. הסיכון היחיד: להפעיל עותק חדש שמצביע על תיקיית נתונים אחרת (ריקה), ואז נראה כאילו הנתונים נעלמו.
+1. **גיבוי לפני כל עדכון:** באפליקציה "ניהול נתונים" ← "הורדת קובץ גיבוי", ובנוסף העתיקו את כל תיקיית הנתונים (`DATA_DIR`; אם לא הוגדרה — התיקייה `data` שליד התוכנית).
+2. **עצרו את השרת** (סגרו את החלון השחור). כל עוד הוא רץ, הנתונים נעולים.
+3. (מומלץ: מחקו קודם את התיקייה הישנה `public` — היא מכילה תוכנה בלבד ולא נתונים — כדי שלא יישארו קבצים ישנים.) חלצו את ה־zip החדש **מעל התיקייה הקיימת** (Windows: Extract All ← אותה תיקייה ← "Replace the files"), או לתיקייה חדשה. אם בחרתם בתיקייה חדשה: העתיקו אליה את `config.cmd` (ואת תיקיית `data` אם היא ישבה ליד התוכנית), או הגדירו `DATA_DIR` במלואו לנתיב הישן.
+4. הריצו `check.cmd` ואז `start.cmd`, ופתחו את האפליקציה: מספר האנשים והתקנים חייב להיות זהה למה שהיה. **אם מוצג מסך "הקמת המערכת" — אל תבחרו כלום:** סגרו את השרת, תקנו את `DATA_DIR` והפעילו שוב. (בחירה ב"התחלה ריקה" על תיקייה חדשה אינה מוחקת את הנתונים הישנים, אך תפצל אתכם לשתי מערכות.)
+5. שמרו את התיקייה הישנה (או הגיבוי) עד שוידאתם שהכול תקין.
+6. אין צורך בשום פעולה אצל המשתמשים מלבד רענון הדף. הנתונים הישנים תואמים לגרסה החדשה; אין "מעבר" נתונים.
+- **גרסאות שמורות פנימית:** רישומים ישנים ביומן השינויים נשארים כפי שנכתבו (גם אם השתמשו בניסוח ישן, למשל "מפקד הארגון").
+- **אל תחזרו לגרסה ישנה** אחרי שהוזנו נתונים עם התכונות החדשות: גיבוי מגרסה חדשה (למשל עם דרגת קא"ב) לא ישוחזר בגרסה ישנה שאינה מכירה אותה.
+- **הקובץ הבודד (`standalone.html`):** הנתונים שמורים בדפדפן, לא בקובץ. לפני שמחליפים קובץ הורידו גיבוי ("ניהול נתונים"); אם אחרי פתיחת הקובץ החדש אינכם רואים את הנתונים — שחזרו מהגיבוי. (ב־Chrome וב־Edge הנתונים נשמרים גם כשמחליפים קובץ; בדפדפנים אחרים, כמו Firefox, ייתכן שלא.)
 
 ### אבטחה — חשוב לדעת
 - **אין התחברות ואין סיסמאות.** כל מי שמגיע לכתובת השרת יכול לצפות ולשנות נתונים. השם שמוזן בכניסה הוא תיעוד בלבד ואינו מזהה מאומת.
@@ -130,8 +139,17 @@ Files on NFS are not safe for two processes writing at once. The server therefor
 - **From the app:** "ניהול נתונים" in the menu — download a backup file and restore from a file (a restore first keeps a copy of the current state).
 - Copying the whole `DATA_DIR` is a complete backup (data and change log).
 
-### Upgrading
-Stop the server, replace `server.mjs` and `public/` with the new version (do not touch `DATA_DIR`), start again. Users just refresh the page.
+### Upgrading without overwriting data
+**Principle:** the new package contains software only — **no data and no `config.cmd` / `config.env`**. Extracting it over the existing folder therefore cannot overwrite your data or settings. The only risk is starting a new copy that points at a different (empty) data folder, which makes the data look lost.
+1. **Back up before every upgrade:** in the app "ניהול נתונים" → "Download backup file", and also copy the whole data folder (`DATA_DIR`; if it was not set, the `data` folder next to the program).
+2. **Stop the server** (close the black window). While it runs, the data is locked.
+3. (Recommended: first delete the old `public` folder — it holds software only, no data — so no old files remain.) Extract the new zip **over the existing folder** (Windows: Extract All → same folder → "Replace the files"), or into a new folder. For a new folder: copy `config.cmd` into it (and the `data` folder if it sat next to the program), or set `DATA_DIR` in full to the old path.
+4. Run `check.cmd`, then `start.cmd`, and open the app: the number of people and billets must be the same as before. **If the "הקמת המערכת" (first-run) screen appears, choose nothing:** stop the server, fix `DATA_DIR` and start again. (Choosing "start empty" on a new folder does not delete the old data, but splits you into two systems.)
+5. Keep the old folder (or the backup) until you have confirmed everything is fine.
+6. Users only need to refresh the page. Old data is compatible with the new version; there is no data migration step.
+- **Older log entries** stay as they were written (even if they use older wording, e.g. "מפקד הארגון").
+- **Do not go back to an older version** once data has been entered with new features: a backup from a newer version (e.g. containing the degree קא"ב) cannot be restored into an older version that does not know it.
+- **The single file (`standalone.html`):** the data is kept in the browser, not in the file. Download a backup before replacing the file; if you cannot see your data after opening the new file, restore from the backup. (Chrome and Edge keep the data when the file is replaced; other browsers, such as Firefox, may not.)
 
 ### Security — please read
 - **There is no login and no password.** Anyone who can reach the server address can view and change data. The name entered at first use is for the log only and is not verified.

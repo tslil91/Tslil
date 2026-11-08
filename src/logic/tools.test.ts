@@ -60,7 +60,7 @@ describe('bulkMove', () => {
     // 2 = commander of s1 (moves → loses command), 6 and 3 are in s1, 1 = org commander (skipped)
     expect(r.moved).toBe(3);
     expect(r.commandsEnded).toBe(1);
-    expect(r.skipped).toEqual([{ id: 1, name: 'דנה רוזן', reason: 'מפקד הארגון אינו משויך למדור' }]);
+    expect(r.skipped).toEqual([{ id: 1, name: 'דנה רוזן', reason: 'רע"ן אינו משויך למדור' }]);
     expect(r.commanders.sections.s1).toBeNull();
     expect(r.commanders.org).toBe(1);
     expect(r.people.filter((p) => p.sectionId === 's2').map((p) => p.id).sort((a, b) => a - b)).toEqual([2, 3, 4, 5, 6, 10, 12, 16]);

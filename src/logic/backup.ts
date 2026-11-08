@@ -131,7 +131,7 @@ export function parseBackup(text: string): ParseResult {
       secs[k] = v;
     }
     for (const s of sections) if (!(s.id in secs)) secs[s.id] = null;
-    if (cmd.org !== null && !personIds.has(cmd.org as number)) err('מפקד הארגון אינו קיים ברשימת האנשים');
+    if (cmd.org !== null && !personIds.has(cmd.org as number)) err('רע"ן אינו קיים ברשימת האנשים');
     commanders = { org: (cmd.org as number | null) ?? null, sections: secs };
   }
 

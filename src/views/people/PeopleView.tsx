@@ -138,7 +138,7 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
             <label htmlFor="sec-filter" className="text-[13px] font-semibold">מדור:</label>
             <select id="sec-filter" className="input w-[200px]" value={filters.section ?? ''} onChange={(e) => setFilter('section', e.target.value)}>
               <option value="">כל הארגון</option>
-              <option value="none">מפקד הארגון וכפופים ישירות</option>
+              <option value="none">רע"ן וכפופים ישירות</option>
               {s.sections.map((sec) => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
             </select>
             <button type="button" className="btn" onClick={() => setManaging(true)}>ניהול מדורים</button>
@@ -229,7 +229,7 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
                                 ) : (
                                   <>
                                     <a href={personHref(r.id)} className="truncate text-ink no-underline hover:underline" title="לדף האדם">{r.name}</a>
-                                    {s.commanders.org === r.id && <span className="chip chip-cmd">מפקד הארגון</span>}
+                                    {s.commanders.org === r.id && <span className="chip chip-cmd">רע"ן</span>}
                                     {r.sectionId && s.commanders.sections[r.sectionId] === r.id && <span className="chip chip-cmd">מפקד המדור</span>}
                                   </>
                                 )}

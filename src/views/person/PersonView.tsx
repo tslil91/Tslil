@@ -42,7 +42,7 @@ export function PersonView({ id }: { id?: string | null }) {
     );
   }
 
-  const secName = (sid: string | null) => (sid ? s.sections.find((x) => x.id === sid)?.name ?? sid : 'כפוף ישירות למפקד הארגון');
+  const secName = (sid: string | null) => (sid ? s.sections.find((x) => x.id === sid)?.name ?? sid : 'כפוף ישירות לרע"ן');
   const place = placementOf(person, s.commanders);
   const billets = s.assignments.filter((a) => a.personId === pid).sort((a, b) => (a.start < b.start ? 1 : -1));
   const periods = periodsOf(s.sectionHistory, pid);
@@ -64,7 +64,7 @@ export function PersonView({ id }: { id?: string | null }) {
           <Card title="פרטים" subtitle="כל השדות הרלוונטיים לסוג ולאוכלוסייה">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className={`chip chip-${person.pop}`}>{POP_LABELS[person.pop]}</span>
-              {place === 'orgcmd' && <span className="chip chip-cmd">מפקד הארגון</span>}
+              {place === 'orgcmd' && <span className="chip chip-cmd">רע"ן</span>}
               {place.startsWith('cmd:') && <span className="chip chip-cmd">מפקד המדור</span>}
               <span className="text-[13px] text-muted">מיקום בארגון:</span>
               <a className="text-[13px] font-semibold text-accent underline" href={sectionHref(person.sectionId)}>{placementLabel(place, s.sections)}</a>

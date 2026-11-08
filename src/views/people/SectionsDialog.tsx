@@ -68,7 +68,7 @@ export function SectionsDialog({ onClose }: { onClose: () => void }) {
               </li>
             );
           })}
-          {sections.length === 0 && <li className="py-3 text-sm text-muted">אין מדורים. כל האנשים כפופים ישירות למפקד הארגון.</li>}
+          {sections.length === 0 && <li className="py-3 text-sm text-muted">אין מדורים. כל האנשים כפופים ישירות לרע"ן.</li>}
         </ul>
 
         <form className="mt-3 flex flex-col gap-1" onSubmit={(e) => { e.preventDefault(); add(); }}>
@@ -85,7 +85,7 @@ export function SectionsDialog({ onClose }: { onClose: () => void }) {
         <ConfirmDialog
           title={`למחוק את ${removing.name}?`}
           message={count(removing.id) > 0
-            ? `במדור ${count(removing.id)} אנשים. הם יועברו אל "כפופים ישירות למפקד הארגון"${commanderName(removing.id) ? ` ו־${commanderName(removing.id)} יפסיק/תפסיק לשמש מפקד המדור` : ''}. לא ניתן לבטל פעולה זו.`
+            ? `במדור ${count(removing.id)} אנשים. הם יועברו אל "כפופים ישירות לרע"ן"${commanderName(removing.id) ? ` ו־${commanderName(removing.id)} יפסיק/תפסיק לשמש מפקד המדור` : ''}. לא ניתן לבטל פעולה זו.`
             : 'המדור ריק ויימחק. לא ניתן לבטל פעולה זו.'}
           confirmLabel="כן, מחק"
           onCancel={() => setRemoving(null)}

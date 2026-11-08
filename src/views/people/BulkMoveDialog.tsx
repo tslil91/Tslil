@@ -11,7 +11,7 @@ export function BulkMoveDialog({ ids, onClose, onDone }: { ids: number[]; onClos
   const preview = useMemo(() => bulkMove(people, commanders, ids, dest), [people, commanders, ids, dest]);
   const options: { dest: BulkDest; label: string; sub: string }[] = [
     ...sections.map((s) => ({ dest: { kind: 'section', id: s.id } as BulkDest, label: s.name, sub: 'איש צוות במדור' })),
-    { dest: { kind: 'org' }, label: 'כפופים ישירות למפקד הארגון', sub: 'ללא מדור' },
+    { dest: { kind: 'org' }, label: 'כפופים ישירות לרע"ן', sub: 'ללא מדור' },
   ];
   const same = (a: BulkDest, b: BulkDest) => a.kind === b.kind && (a.kind === 'org' || (b.kind === 'section' && a.id === b.id));
   const destName = dest.kind === 'org' ? 'כפופים ישירות' : sections.find((s) => s.id === dest.id)?.name ?? '';
