@@ -173,3 +173,7 @@ Files on NFS are not safe for two processes writing at once. The server therefor
 | `state.json is damaged` | The server refuses to start (it will not start empty). Restore a file from `backups/`. |
 | Page opens but "no connection to the server" | Check that the server is running, the firewall (PORT) and that the NFS is reachable. Health check: `http://<server>:8080/api/health`. |
 | `Cannot listen on ...` | The port is taken. Change `PORT`. |
+
+## Removing people before upgrading (stop-gap)
+
+`release/remove-people-tool.html` (`npm run package:remove-tool`) is an offline page: open a backup file, tick people, save a cleaned backup, then restore it in the app via "ניהול נתונים". Commanders cannot be ticked; the original file is untouched.

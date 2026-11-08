@@ -12,7 +12,8 @@
     "build:server": "node scripts/package.mjs --dev",
     "server": "node scripts/dev-server.mjs",
     "package": "npm run typecheck && node scripts/package.mjs",
-    "package:single": "node scripts/single-file.mjs"
+    "package:single": "node scripts/single-file.mjs",
+    "package:remove-tool": "node scripts/remove-tool.mjs"
   },
   "dependencies": {
     "@fontsource/heebo": "5.3.0",
