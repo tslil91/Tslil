@@ -65,6 +65,8 @@ The field registry (`logic/fields.ts`) drives the people table columns, filters,
 | Area | State |
 |---|---|
 | כוח אדם | Table by section (commander first, degree high → low), column sort and filters, date filters (year / month / between dates), inline edit, move / appoint, add, tree, section management, **bulk selection and move**, **saved views** (shareable as a link), links to person and section pages, Excel export / import |
+| הסרת אנשים | Two ways from the 🗑 button: **left the unit** (leaves the active list, billet freed, all history kept, can be restored from "show who were removed") and **delete** (entered by mistake: the person and everything of theirs, after a summary and a confirmation). A commander cannot be removed until another is appointed |
+| החלפת מפקד | "החלפת מפקד" / "החלפת רע"ן" on the section page and on each group header of the table |
 | דף איש צוות | Details, billet history, dated section history, grants, **notes**, that person's change log, edit and move |
 | דף מדור | Commander, members, degree distribution, releases chart, billets of the members |
 | תקנים | Query and filters, inline edit, history dropdown, add and delete with confirmation, Excel export / import |

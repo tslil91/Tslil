@@ -25,6 +25,9 @@ export interface Person {
   /** תאריך כניסה לקבע — KEVA only. */
   entryDate: ISODate | null;
   releaseDate: ISODate | null;
+  /** Removed from the active list because they left the unit (history is kept). null / missing = active. */
+  leftAt?: ISODate | null;
+  leftNote?: string | null;
   // NCO + officer
   bachelor?: boolean;
   masters?: boolean;

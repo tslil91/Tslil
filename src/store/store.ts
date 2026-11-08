@@ -9,6 +9,7 @@ import { deriveSectionHistory } from '../logic/history';
 import { nextId, openAssignment, removeBillet, setPersonBillet } from '../logic/billets';
 import { addSection, deleteSection, renameSection } from '../logic/sections';
 import { bulkMove, type BulkDest } from '../logic/bulk';
+import { deletePerson, markLeft, restoreLeft } from '../logic/removal';
 import { applyPlacement, type PersonDraft, type PlacementKey } from '../logic/people';
 import type { Filters } from '../logic/people';
 import type { NewScenarioOp, ScenarioOp } from '../logic/simulator';
@@ -49,6 +50,12 @@ interface Actions {
   /** Create or update a person (id null = new). The billet is applied through billet assignments. */
   savePerson: (draft: PersonDraft) => Person;
   placePerson: (personId: number, key: PlacementKey) => void;
+  /** Appoint a commander for the organization head (רע"ן) or a section; null = leave the post empty. */
+  setCommander: (unit: { kind: 'org' } | { kind: 'section'; id: string }, personId: number | null) => void;
+  /** Each returns an error message, or null on success. */
+  markPersonLeft: (id: number, leftAt: string, note: string) => string | null;
+  restorePersonToUnit: (id: number) => string | null;
+  deletePersonForGood: (id: number) => string | null;
   /** Move several people at once. Returns what happened (for the confirmation message). */
   bulkMovePeople: (ids: number[], dest: BulkDest) => ReturnType<typeof bulkMove>;
   addSection: (name: string) => void;
@@ -125,6 +132,34 @@ const creator: StateCreator<AppState, [['zustand/persist', unknown]]> = (set0, g
         for (const k of Object.keys(sections)) if (sections[k] === id && person.sectionId !== k) sections[k] = null;
         set({ people, assignments: synced, commanders: { ...s.commanders, sections } });
         return person;
+      },
+
+      setCommander: (unit, personId) => {
+        const s = get();
+        if (personId === null) {
+          set({ commanders: unit.kind === 'org' ? { ...s.commanders, org: null } : { ...s.commanders, sections: { ...s.commanders.sections, [unit.id]: null } } });
+          return;
+        }
+        set(applyPlacement(s.people, s.commanders, personId, unit.kind === 'org' ? 'orgcmd' : `cmd:${unit.id}`));
+      },
+
+      markPersonLeft: (id, leftAt, note) => {
+        const r = markLeft(pickData(get()), id, leftAt, note, todayISO());
+        if (!r.ok) return r.error;
+        set({ ...r.data });
+        return null;
+      },
+      restorePersonToUnit: (id) => {
+        const r = restoreLeft(pickData(get()), id);
+        if (!r.ok) return r.error;
+        set({ ...r.data });
+        return null;
+      },
+      deletePersonForGood: (id) => {
+        const r = deletePerson(pickData(get()), id);
+        if (!r.ok) return r.error;
+        set({ ...r.data, scenario: get().scenario.filter((o) => o.personId !== id) });
+        return null;
       },
 
       bulkMovePeople: (ids, dest) => {

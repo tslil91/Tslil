@@ -17,6 +17,8 @@ import { useStore } from '../../store/store';
 import { useAudit } from '../../sync/useAudit';
 import { AddPersonDialog } from '../people/AddPersonDialog';
 import { MoveDialog } from '../people/MoveDialog';
+import { RemovePersonDialog } from '../people/RemovePersonDialog';
+import { isActivePerson } from '../../domain/rules';
 import { CellView } from '../people/PersonCells';
 
 /** One place for everything about a person: details, billet and section history, grants, notes and the change log. */
@@ -24,6 +26,7 @@ export function PersonView({ id }: { id?: string | null }) {
   const s = useStore();
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [removeNote, setRemoveNote] = useState<number | null>(null);
   const pid = Number(id);
@@ -55,10 +58,17 @@ export function PersonView({ id }: { id?: string | null }) {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <PageHeader title={person.name} subtitle={`${person.degree} · ${RANK_LABELS[person.rank]} · ${POP_LABELS[person.pop]} · מ.א ${person.mid}`}>
         <a href="#/people" className="btn no-underline">‹ חזרה לכוח אדם</a>
-        <button type="button" className="btn" onClick={() => setMoving(true)}><IconMove size={16} />שינוי מיקום</button>
+        {isActivePerson(person) && <button type="button" className="btn" onClick={() => setMoving(true)}><IconMove size={16} />שינוי מיקום</button>}
+        <button type="button" className="btn" onClick={() => setRemoving(true)}><IconTrash size={16} />הסרה</button>
         <button type="button" className="btn btn-primary" onClick={() => setEditing(true)}><IconEdit size={16} />עריכה</button>
       </PageHeader>
 
+      {!isActivePerson(person) && (
+        <div role="status" className="mx-3.5 mt-3 flex shrink-0 items-center gap-3 rounded bg-[#fdf0d5] px-4 py-2.5 text-[13px] font-medium text-[#6b3f00]">
+          <span className="flex-1"><strong>{person.name}</strong> עזב/ה את היחידה ב־{formatDate(person.leftAt)}{person.leftNote ? ` · ${person.leftNote}` : ''}. לא מופיע/ה בטבלה, בתמונת המצב ובסימולטור; ההיסטוריה נשמרת.</span>
+          <button type="button" className="btn" onClick={() => { const err = s.restorePersonToUnit(person.id); s.showToast(err ?? `${person.name} הוחזר/ה ליחידה`); }}>החזרה ליחידה</button>
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto p-3.5">
         <div className="mx-auto grid max-w-[1180px] grid-cols-2 gap-3.5">
           <Card title="פרטים" subtitle="כל השדות הרלוונטיים לסוג ולאוכלוסייה">
@@ -152,6 +162,7 @@ export function PersonView({ id }: { id?: string | null }) {
 
       {editing && <AddPersonDialog person={row} onClose={() => setEditing(false)} />}
       {moving && <MoveDialog person={person} onClose={() => setMoving(false)} />}
+      {removing && <RemovePersonDialog person={person} onClose={() => setRemoving(false)} onDeleted={() => go('#/people')} />}
       {removeNote !== null && (
         <ConfirmDialog title="למחוק את ההערה?" message="ההערה תימחק. המחיקה תירשם ביומן השינויים." confirmLabel="כן, מחק" onCancel={() => setRemoveNote(null)}
           onConfirm={() => { s.deleteNote(removeNote); setRemoveNote(null); }} />

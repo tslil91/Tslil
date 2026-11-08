@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Bar, Card, ReleaseChart, plural } from '../../components/charts';
 import { PageHeader } from '../../components/PageHeader';
 import { rangeFilter, todayISO } from '../../domain/dates';
@@ -11,6 +11,8 @@ import { comparePeople, DEFAULT_SORT } from '../../logic/people';
 import { peopleSheet } from '../../logic/sheets';
 import { go, personHref } from '../../nav';
 import { useStore } from '../../store/store';
+import { isActivePerson } from '../../domain/rules';
+import { CommanderDialog } from '../people/CommanderDialog';
 
 /** One page per section (or for those directly under the head of the organization, id "org"). */
 export function SectionView({ id }: { id?: string | null }) {
@@ -22,8 +24,9 @@ export function SectionView({ id }: { id?: string | null }) {
   const exists = isOrg || !!section;
   const name = isOrg ? 'רע"ן וכפופים ישירות' : section?.name ?? '';
 
+  const [changingCommander, setChangingCommander] = useState(false);
   const billetOf = useMemo(() => billetByPerson(s.assignments), [s.assignments]);
-  const members: PersonRow[] = useMemo(() => s.people.filter((p) => p.sectionId === sectionId).map((p) => ({ ...p, billet: billetOf.get(p.id) ?? null })), [s.people, sectionId, billetOf]);
+  const members: PersonRow[] = useMemo(() => s.people.filter((p) => p.sectionId === sectionId && isActivePerson(p)).map((p) => ({ ...p, billet: billetOf.get(p.id) ?? null })), [s.people, sectionId, billetOf]);
   const cmdId = isOrg ? s.commanders.org : sectionId ? s.commanders.sections[sectionId] ?? null : null;
   const sorted = useMemo(() => {
     const list = [...members].sort(comparePeople(DEFAULT_SORT));
@@ -54,6 +57,7 @@ export function SectionView({ id }: { id?: string | null }) {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <PageHeader title={name} subtitle={`${plural(members.length, 'אדם אחד', 'אנשים')} · ${commander ? `${isOrg ? 'רע"ן' : 'מפקד המדור'}: ${commander.degree} ${commander.name}` : isOrg ? 'לא מונה רע"ן' : 'לא מונה מפקד מדור'}`}>
         <a href="#/people" className="btn no-underline">‹ חזרה לכוח אדם</a>
+        <button type="button" className="btn" onClick={() => setChangingCommander(true)}>{isOrg ? 'החלפת רע"ן' : 'החלפת מפקד'}</button>
         <button type="button" className="btn" onClick={showInTable}>פתיחה בטבלה</button>
         <button type="button" className="btn" onClick={() => void downloadWorkbook(`section-${today}`, [peopleSheet(sorted, s.sections, s.commanders)])}>ייצוא ל־Excel</button>
       </PageHeader>
@@ -112,6 +116,7 @@ export function SectionView({ id }: { id?: string | null }) {
           </Card>
         </div>
       </div>
+      {changingCommander && <CommanderDialog unit={isOrg ? { kind: 'org' } : { kind: 'section', id: sectionId! }} onClose={() => setChangingCommander(false)} />}
     </div>
   );
 }

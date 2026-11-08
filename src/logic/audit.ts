@@ -13,6 +13,7 @@ const PERSON_FIELDS: { key: keyof Person; label: string; kind: 'text' | 'bool' |
   { key: 'pop', label: 'אוכלוסייה', kind: 'pop' }, { key: 'rank', label: 'סוג', kind: 'rank' },
   { key: 'degree', label: 'דרגה', kind: 'text' }, { key: 'program', label: 'תוכנית', kind: 'text' },
   { key: 'entryDate', label: 'כניסה לקבע', kind: 'date' }, { key: 'releaseDate', label: 'שחרור', kind: 'date' },
+  { key: 'leftAt', label: 'עזב/ה את היחידה', kind: 'date' }, { key: 'leftNote', label: 'הערה לעזיבה', kind: 'text' },
   { key: 'bachelor', label: 'תואר ראשון', kind: 'bool' }, { key: 'masters', label: 'תואר שני', kind: 'bool' },
   { key: 'gamoshA', label: 'גמו"ש א׳', kind: 'bool' }, { key: 'gamoshB', label: 'גמו"ש ב׳', kind: 'bool' },
   { key: 'dmahCFirst', label: 'הגשה ראשונה דמ"ח ג׳', kind: 'date' }, { key: 'dmahC', label: 'דמ"ח ג׳', kind: 'bool' }, { key: 'dmahCElig', label: 'זכאות דמ"ח ג׳', kind: 'date' },
@@ -84,7 +85,7 @@ export function diffData(prev: AppData, next: AppData): AuditDraft[] {
     if (old.sectionId !== p.sectionId) details.push({ label: 'מיקום בארגון', from: sectionName(old.sectionId, prev), to: sectionName(p.sectionId) });
     if (details.length) out.push(draft('person', p.id, p.id, `${p.name} — ${clip(details)}`, details));
   }
-  for (const p of prev.people) if (!nextPeople.has(p.id)) out.push(draft('person', p.id, p.id, `הוסר/ה: ${p.name}`));
+  for (const p of prev.people) if (!nextPeople.has(p.id)) out.push(draft('person', p.id, p.id, `נמחק/ה לצמיתות: ${p.name} (מ.א ${p.mid}, ${p.degree})`));
 
   // ----- commanders
   const cmdChange = (label: string, from: number | null, to: number | null, entity: string) => {

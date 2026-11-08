@@ -30,6 +30,9 @@ export const ALL_PROGRAMS = [...(PROGRAMS.soldier ?? []), ...(PROGRAMS.officer ?
 
 export const degreesFor = (pop: Population, rank: RankType): string[] => DEGREES[`${pop}-${rank}`] ?? [];
 export const programsFor = (rank: RankType): string[] => PROGRAMS[rank] ?? [];
+/** Everyone who has not been removed as having left the unit. */
+export const isActivePerson = (p: { leftAt?: string | null }): boolean => !p.leftAt;
+
 export const degreeIndex = (degree: string): number => LADDER.indexOf(degree);
 
 export const EDU_FIELDS = ['bachelor', 'masters', 'gamoshA'] as const;

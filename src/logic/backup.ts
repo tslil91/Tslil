@@ -74,12 +74,14 @@ export function parseBackup(text: string): ParseResult {
     if (!(p.program === null || p.program === undefined || isStr(p.program, 60))) return err(`${at} (${p.name}): תוכנית לא תקינה`);
     if (!(p.sectionId === null || p.sectionId === undefined || isStr(p.sectionId, 40))) return err(`${at} (${p.name}): מדור לא תקין`);
     if (p.sectionId && !sectionIds.has(p.sectionId as string)) return err(`${at} (${p.name}): משויך למדור שאינו קיים`);
-    if (!isDateOrNull(p.entryDate) || !isDateOrNull(p.releaseDate) || PERSON_DATES.some((k) => !isDateOrNull(p[k]))) return err(`${at} (${p.name}): תאריך לא תקין`);
+    if (!isDateOrNull(p.entryDate) || !isDateOrNull(p.releaseDate) || !isDateOrNull(p.leftAt) || PERSON_DATES.some((k) => !isDateOrNull(p[k]))) return err(`${at} (${p.name}): תאריך לא תקין`);
+    if (!(p.leftNote === null || p.leftNote === undefined || isStr(p.leftNote, 300))) return err(`${at} (${p.name}): הערת עזיבה לא תקינה`);
     if (PERSON_BOOLS.some((k) => p[k] !== undefined && typeof p[k] !== 'boolean')) return err(`${at} (${p.name}): ערך כן / לא לא תקין`);
     const out: Record<string, unknown> = {
       id: p.id, name: p.name, mid: p.mid, pop: p.pop, rank: p.rank, degree: p.degree, program: p.program ?? null,
       sectionId: p.sectionId ?? null, entryDate: p.entryDate ?? null, releaseDate: p.releaseDate ?? null,
     };
+    if (p.leftAt) { out.leftAt = p.leftAt; out.leftNote = p.leftNote ?? null; }
     for (const k of PERSON_BOOLS) if (p[k] !== undefined) out[k] = p[k];
     for (const k of PERSON_DATES) if (p[k] !== undefined) out[k] = p[k] ?? null;
     people.push(out as unknown as Person);

@@ -28,6 +28,7 @@ export function bulkMove(people: Person[], cmd: Commanders, ids: number[], dest:
   for (const id of new Set(ids)) {
     const p = ps.find((x) => x.id === id);
     if (!p) continue;
+    if (p.leftAt) { skipped.push({ id: p.id, name: p.name, reason: 'הוסר/ה מהיחידה' }); continue; }
     if (p.sectionId === target) { unchanged++; continue; }
     if (cm.org === p.id && target !== null) { skipped.push({ id: p.id, name: p.name, reason: 'רע"ן אינו משויך למדור' }); continue; }
     if (p.sectionId && cm.sections[p.sectionId] === p.id) commandsEnded++;

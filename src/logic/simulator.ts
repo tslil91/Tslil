@@ -19,7 +19,7 @@ export const isActive = (a: BilletAssignment, d: ISODate): boolean => a.start <=
 
 /** In the organization on date d: not yet released, and (for keva) already entered keva. */
 export const isPresent = (p: Person, d: ISODate): boolean =>
-  (p.releaseDate === null || d < p.releaseDate) && !(p.pop === 'keva' && p.entryDate !== null && p.entryDate > d);
+  (p.releaseDate === null || d < p.releaseDate) && !(p.pop === 'keva' && p.entryDate !== null && p.entryDate > d) && !(p.leftAt && p.leftAt <= d);
 
 const SCENARIO_ID_BASE = 1_000_000;
 

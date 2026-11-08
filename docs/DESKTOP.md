@@ -205,3 +205,23 @@ Grant   id, personId, type (VOUCHER שובר | GRANT מענק | INCENTIVE תמר
   Lists per population and type: חובה-קצין `קמ"א, סג"מ, סגן`; קבע-קצין `קא"ב, סגן, סרן, רס"ן, סא"ל, אל"מ`. To change a degree list or the order later, edit `DEGREES` and `LADDER` in `src/domain/rules.ts` (one place; the filters, editors, import, backup validation and data checks all read it).
 - **Role name:** the head of the organization is now labelled **רע"ן** everywhere in the interface (table chip, tree, dialogs, messages, change log, data checks, Excel export column "תפקיד"). Only the wording changed; stored data is untouched. Older change-log lines keep the wording they were written with. The section commander is still "מפקד המדור".
 - **Upgrading** safely: see the "Upgrading without overwriting data" section of `INSTALL.md`.
+
+
+---
+
+## 13. Revision 6 — removing people and changing commanders
+
+### 13.1 Two kinds of removal (from the 🗑 button on a row, or "הסרה" on the person page)
+| | Left the unit | Delete (entered by mistake) |
+|---|---|---|
+| Data | Person kept with a leaving date and an optional note | Person and everything of theirs removed |
+| Billet | Closed on the leaving date (billet becomes vacant) | The person's assignments are removed, also from the billets' history |
+| Grants, notes, section history | Kept | Removed |
+| Appears in table / overview / attention list / simulator | No (hidden; "show who were removed" brings them back greyed out) | No |
+| Undo | Yes — restore button (the person returns without a billet) | Only by restoring a backup |
+| Change log | "עזב/ה את היחידה: — ← date" and the billet line | "נמחק/ה לצמיתות: name (מ.א, degree)" |
+
+Rules: a **commander (רע"ן or a section commander) cannot be removed or deleted** — appoint another first (the dialog offers "החלפת מפקד"). The leaving date cannot be in the future. Excel import refuses to update someone who left, and adding a new person with a מ.א that belongs to someone who left explains how to restore them instead. Backups keep who left.
+
+### 13.2 Changing a commander
+Besides the ⇅ button of a person, **"החלפת מפקד"** (or "החלפת רע"ן") is available on the section page and on every group header of the table. It lists the people, warns what will happen (the previous commander stays as an ordinary member; a person from another section is moved; someone who commands elsewhere stops commanding there) and can leave the post empty.

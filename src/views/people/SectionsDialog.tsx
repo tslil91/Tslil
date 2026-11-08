@@ -14,7 +14,7 @@ export function SectionsDialog({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<{ where: string; message: string } | null>(null);
   const [removing, setRemoving] = useState<Section | null>(null);
 
-  const count = (id: string) => people.filter((p) => p.sectionId === id).length;
+  const count = (id: string) => people.filter((p) => p.sectionId === id && !p.leftAt).length;
   const commanderName = (id: string) => people.find((p) => p.id === commanders.sections[id])?.name ?? null;
 
   const saveRename = (s: Section) => {

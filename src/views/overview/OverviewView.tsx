@@ -6,10 +6,12 @@ import { billetTurnover, educationProgress, officerPrograms, releasesByMonth } f
 import type { Filters } from '../../logic/people';
 import { useStore } from '../../store/store';
 import { AttentionCard, QualityCard } from './Attention';
+import { isActivePerson } from '../../domain/rules';
 
 /** Separate screen: summary charts. Clicking a bar opens the personnel table already filtered. */
 export function OverviewView() {
-  const { people, billets, assignments, setPendingPeopleFilter } = useStore();
+  const { people: allPeople, billets, assignments, setPendingPeopleFilter } = useStore();
+  const people = useMemo(() => allPeople.filter(isActivePerson), [allPeople]);
   const today = todayISO();
 
   const releases = useMemo(() => releasesByMonth(people, today, 12), [people, today]);

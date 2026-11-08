@@ -29,3 +29,4 @@ export const IconSimulate = ({ size, ...p }: P) => (<svg {...base(size)} {...p}>
 export const IconAlert = ({ size, ...p }: P) => (<svg {...base(size)} {...p}><path d="M12 3l10 18H2L12 3z" /><path d="M12 10v5M12 18v.5" /></svg>);
 export const IconLink = ({ size, ...p }: P) => (<svg {...base(size)} {...p}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1" /></svg>);
 export const IconBookmark = ({ size, ...p }: P) => (<svg {...base(size)} {...p}><path d="M6 3h12v18l-6-4-6 4V3z" /></svg>);
+export const IconRestore = ({ size, ...p }: P) => (<svg {...base(size)} {...p}><path d="M9 14L4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>);

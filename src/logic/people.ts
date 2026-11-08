@@ -144,7 +144,8 @@ export function validatePerson(d: PersonDraft, people: Person[], billets: Billet
   if (!d.name.trim()) return 'יש להזין שם.';
   if (!/^\d{5,9}$/.test(d.mid.trim())) return 'מ.א חייב להכיל 5–9 ספרות.';
   const mid = Number(d.mid);
-  if (people.some((p) => p.id !== d.id && p.mid === mid)) return 'מ.א זה כבר קיים במערכת.';
+  const dup = people.find((p) => p.id !== d.id && p.mid === mid);
+  if (dup) return dup.leftAt ? `מ.א זה שייך ל${dup.name}, שהוסר/ה מהיחידה. אפשר להחזיר אותו/ה ליחידה במקום להוסיף מחדש.` : 'מ.א זה כבר קיים במערכת.';
   if (d.pop === 'keva' && d.billet !== null) {
     if (!billets.some((b) => b.id === d.billet)) return `תקן ${d.billet} אינו קיים ברשימת התקנים.`;
     const occ = occupantOf(d.billet);

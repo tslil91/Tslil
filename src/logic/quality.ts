@@ -1,4 +1,4 @@
-import { applicable, degreesFor, programsFor } from '../domain/rules';
+import { applicable, degreesFor, programsFor, isActivePerson } from '../domain/rules';
 import type { AppData, ISODate } from '../domain/types';
 
 export type IssueTarget = { kind: 'person'; id: number } | { kind: 'billet'; id: number } | { kind: 'section'; id: string } | { kind: 'org' };
@@ -35,6 +35,7 @@ export function dataIssues(d: AppData, today: ISODate): Issue[] {
   for (const p of d.people) {
     mids.set(p.mid, [...(mids.get(p.mid) ?? []), p.id]);
     const t = { kind: 'person' as const, id: p.id };
+    if (!isActivePerson(p)) continue; // someone who left is only checked for a duplicate מ.א
     if (p.sectionId !== null && !sections.has(p.sectionId)) add(`p-sec-${p.id}`, 'error', `${p.name}: משויך/ת למדור שאינו קיים`, t);
     if (!degreesFor(p.pop, p.rank).includes(p.degree)) add(`p-degree-${p.id}`, 'error', `${p.name}: הדרגה "${p.degree}" אינה תקינה עבור סוג האוכלוסייה והסוג`, t);
     if (p.program && !programsFor(p.rank).includes(p.program)) add(`p-program-${p.id}`, 'error', `${p.name}: התוכנית "${p.program}" אינה אפשרית עבור הסוג`, t);

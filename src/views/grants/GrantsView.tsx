@@ -161,7 +161,7 @@ export function GrantsView() {
       {editing && (
         <GrantDialog
           grant={editing === 'new' ? null : editing}
-          people={s.people}
+          people={s.people.filter((p) => !p.leftAt || (editing !== 'new' && p.id === editing.personId))}
           onClose={() => setEditing(null)}
           onSave={(g, isNew) => {
             s.saveGrant(g);

@@ -71,6 +71,10 @@
 - **אל תחזרו לגרסה ישנה** אחרי שהוזנו נתונים עם התכונות החדשות: גיבוי מגרסה חדשה (למשל עם דרגת קא"ב) לא ישוחזר בגרסה ישנה שאינה מכירה אותה.
 - **הקובץ הבודד (`standalone.html`):** הנתונים שמורים בדפדפן, לא בקובץ. לפני שמחליפים קובץ הורידו גיבוי ("ניהול נתונים"); אם אחרי פתיחת הקובץ החדש אינכם רואים את הנתונים — שחזרו מהגיבוי. (ב־Chrome וב־Edge הנתונים נשמרים גם כשמחליפים קובץ; בדפדפנים אחרים, כמו Firefox, ייתכן שלא.)
 
+### הסרת אנשים והחלפת מפקד (בקצרה)
+- כפתור 🗑 בשורה: **עזב/ה את היחידה** (יוצא מהרשימה הפעילה, ההיסטוריה נשמרת, אפשר להחזיר דרך "הצג את מי שהוסרו") או **מחיקה** (הוזן בטעות; סופי, רק שחזור מגיבוי מחזיר). לפני מחיקה מוצג מה יימחק. לפני פעולות כאלה כדאי להוריד גיבוי ("ניהול נתונים").
+- אי אפשר להסיר מפקד: קודם ממנים אחר ("החלפת מפקד" בדף המדור ובכותרת הקבוצה בטבלה; "החלפת רע"ן" לראש הארגון).
+
 ### אבטחה — חשוב לדעת
 - **אין התחברות ואין סיסמאות.** כל מי שמגיע לכתובת השרת יכול לצפות ולשנות נתונים. השם שמוזן בכניסה הוא תיעוד בלבד ואינו מזהה מאומת.
 - הגבלת גישה צריכה להיעשות ברמת הרשת (חומת אש, רשת סגורה) והרשאות הקבצים של תיקיית הנתונים. אם נדרש אימות משתמשים — זו תוספת נפרדת (ראה "הרשאות" ברשימת ההצעות).
@@ -150,6 +154,10 @@ Files on NFS are not safe for two processes writing at once. The server therefor
 - **Older log entries** stay as they were written (even if they use older wording, e.g. "מפקד הארגון").
 - **Do not go back to an older version** once data has been entered with new features: a backup from a newer version (e.g. containing the degree קא"ב) cannot be restored into an older version that does not know it.
 - **The single file (`standalone.html`):** the data is kept in the browser, not in the file. Download a backup before replacing the file; if you cannot see your data after opening the new file, restore from the backup. (Chrome and Edge keep the data when the file is replaced; other browsers, such as Firefox, may not.)
+
+### Removing people and changing a commander (in short)
+- The 🗑 button on a row: **left the unit** (leaves the active list, history is kept, can be restored through "show who were removed") or **delete** (entered by mistake; final — only a backup restore brings it back). Before a delete the app shows what will be removed. Download a backup ("ניהול נתונים") before such actions.
+- A commander cannot be removed: appoint another first ("החלפת מפקד" on the section page and on the group header in the table; "החלפת רע"ן" for the head of the organization).
 
 ### Security — please read
 - **There is no login and no password.** Anyone who can reach the server address can view and change data. The name entered at first use is for the log only and is not verified.

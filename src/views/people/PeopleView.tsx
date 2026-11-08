@@ -16,7 +16,11 @@ import { replaceHash, personHref, sectionHref } from '../../nav';
 import { decodeView, type ViewState } from '../../logic/views';
 import { BulkMoveDialog } from './BulkMoveDialog';
 import { ViewsDialog } from './ViewsDialog';
-import { IconBookmark } from '../../components/Icons';
+import { IconBookmark, IconRestore, IconTrash } from '../../components/Icons';
+import { isActivePerson } from '../../domain/rules';
+import { formatDate } from '../../domain/dates';
+import { CommanderDialog, type Unit } from './CommanderDialog';
+import { RemovePersonDialog } from './RemovePersonDialog';
 import { AddPersonDialog } from './AddPersonDialog';
 import { SectionsDialog } from './SectionsDialog';
 import { MoveDialog } from './MoveDialog';
@@ -24,7 +28,7 @@ import { CellView, FieldEditor, patchDraft, toDraft } from './PersonCells';
 import { PeopleTree } from './PeopleTree';
 
 const CHECK_W = 36;
-const ACTIONS_W = 96;
+const ACTIONS_W = 132;
 const NAME_W = 210;
 const ACTIONS_AT = CHECK_W;
 const NAME_AT = CHECK_W + ACTIONS_W;
@@ -50,6 +54,9 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkMoving, setBulkMoving] = useState(false);
   const [viewsOpen, setViewsOpen] = useState(false);
+  const [showLeft, setShowLeft] = useState(false);
+  const [removing, setRemoving] = useState<Person | null>(null);
+  const [commanderFor, setCommanderFor] = useState<Unit | null>(null);
 
   // Opened from the overview screen: apply the filters it asked for (once).
   const pending = useStore((st) => st.pendingPeopleFilter);
@@ -76,7 +83,10 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
     return s.people.map((p) => ({ ...p, billet: map.get(p.id) ?? null }));
   }, [s.people, s.assignments]);
 
-  const shown = rows.filter((r) => matchesFilters(r, filters, query, today));
+  // people who left the unit are hidden unless asked for
+  const leftCount = rows.filter((r) => !isActivePerson(r)).length;
+  const totalShownBase = showLeft ? rows.length : rows.length - leftCount;
+  const shown = rows.filter((r) => (showLeft || isActivePerson(r)) && matchesFilters(r, filters, query, today));
   const filtering = query.trim() !== '' || Object.values(filters).some(Boolean);
   const groups = groupPeople(shown, s.sections, s.commanders, sort, s.people).filter((g) => !filtering || g.rows.length > 0);
 
@@ -87,7 +97,8 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
   const shownIds = new Set(shown.map((r) => r.id));
   const selIds = [...selected].filter((id) => shownIds.has(id));
   const hiddenSelected = selected.size - selIds.length;
-  const allShownSelected = shown.length > 0 && selIds.length === shown.length;
+  const selectable = shown.filter(isActivePerson);
+  const allShownSelected = selectable.length > 0 && selIds.length === selectable.length;
   const toggleOne = (id: number) => setSelected((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleMany = (ids: number[], on: boolean) => setSelected((cur) => { const n = new Set(cur); ids.forEach((id) => (on ? n.add(id) : n.delete(id))); return n; });
   const headerCheck = useRef<HTMLInputElement>(null);
@@ -111,7 +122,7 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <PageHeader title="כוח אדם" subtitle={`${shown.length} מתוך ${rows.length} אנשים`}>
+      <PageHeader title="כוח אדם" subtitle={`${shown.length} מתוך ${totalShownBase} אנשים${!showLeft && leftCount > 0 ? ` · ${leftCount} הוסרו מהיחידה` : ''}`}>
         <div role="group" aria-label="תצוגה" className="inline-flex gap-0.5 rounded bg-soft p-[3px]">
           {([['table', 'טבלה', <IconTable key="t" size={16} />], ['tree', 'עץ היררכי', <IconTree key="r" size={16} />]] as const).map(([v, label, icon]) => (
             <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
@@ -130,7 +141,7 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
       {view === 'tree' ? (
         <>
           <div className="h-3" />
-          <PeopleTree people={shown} onMove={setMoving} />
+          <PeopleTree people={shown.filter(isActivePerson)} onMove={setMoving} />
         </>
       ) : (
         <>
@@ -143,6 +154,7 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
             </select>
             <button type="button" className="btn" onClick={() => setManaging(true)}>ניהול מדורים</button>
             <button type="button" className="btn" onClick={() => setViewsOpen(true)}><IconBookmark size={15} />תצוגות שמורות</button>
+            {leftCount > 0 && <button type="button" className={`btn ${showLeft ? 'btn-on' : ''}`} aria-pressed={showLeft} onClick={() => setShowLeft((v) => !v)}>הצג את מי שהוסרו ({leftCount})</button>}
             <span className="h-6 w-px bg-line2" />
             <span className="text-[13px] font-semibold">עמודות:</span>
             <button type="button" className={`btn ${showEdu ? 'btn-on' : ''}`} aria-pressed={showEdu} onClick={() => setShowEdu((v) => !v)}>השכלה והכשרה</button>
@@ -171,8 +183,8 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
               {/* header */}
               <div className="sticky top-0 z-20 grid min-w-max border-b-2 border-line2 bg-head" style={{ gridTemplateColumns: gridCols }}>
                 <div className="sticky start-0 z-30 flex items-end justify-center bg-head pb-2">
-                  <input ref={headerCheck} type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label="בחירת כל האנשים המוצגים" checked={allShownSelected} disabled={shown.length === 0}
-                    onChange={(e) => toggleMany(shown.map((r) => r.id), e.target.checked)} />
+                  <input ref={headerCheck} type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label="בחירת כל האנשים המוצגים" checked={allShownSelected} disabled={selectable.length === 0}
+                    onChange={(e) => toggleMany(selectable.map((r) => r.id), e.target.checked)} />
                 </div>
                 <div className="sticky z-30 flex items-end bg-head px-2 py-1.5" style={{ insetInlineStart: ACTIONS_AT }}><span className="label">פעולות</span></div>
                 <div className="sticky z-30 flex flex-col gap-1 border-e border-line bg-head px-2 py-1.5" style={{ insetInlineStart: NAME_AT }}>
@@ -190,8 +202,8 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
                   <section key={g.id} aria-label={g.name}>
                     <div className="min-w-max border-b border-line2 bg-group">
                       <div className="sticky start-0 inline-flex h-[34px] items-center gap-3 ps-3 pe-3.5">
-                        <input type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label={`בחירת כל אנשי ${g.name}`} disabled={g.rows.length === 0}
-                          checked={g.rows.length > 0 && g.rows.every((r) => selected.has(r.id))} onChange={(e) => toggleMany(g.rows.map((r) => r.id), e.target.checked)} />
+                        <input type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label={`בחירת כל אנשי ${g.name}`} disabled={g.rows.filter(isActivePerson).length === 0}
+                          checked={g.rows.filter(isActivePerson).length > 0 && g.rows.filter(isActivePerson).every((r) => selected.has(r.id))} onChange={(e) => toggleMany(g.rows.filter(isActivePerson).map((r) => r.id), e.target.checked)} />
                         <button type="button" aria-expanded={open} onClick={() => setCollapsed((c) => ({ ...c, [g.id]: open }))} className="inline-flex items-center gap-3">
                           <IconChevron size={16} open={open} className="text-muted" />
                           <span className="text-sm font-bold">{g.name}</span>
@@ -199,6 +211,7 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
                           <span className="text-xs text-muted">{g.commanderLabel}: {g.commander ? `${g.commander.degree} ${g.commander.name}` : 'לא מונה'}</span>
                         </button>
                         <a href={sectionHref(g.id === 'org' ? null : g.id)} className="text-xs font-semibold text-accent underline">דף {g.id === 'org' ? 'הכפופים' : 'המדור'}</a>
+                        <button type="button" className="text-xs font-semibold text-accent underline" onClick={() => setCommanderFor(g.id === 'org' ? { kind: 'org' } : { kind: 'section', id: g.id })}>{g.id === 'org' ? 'החלפת רע"ן' : 'החלפת מפקד'}</button>
                       </div>
                     </div>
                     {open && (
@@ -206,9 +219,9 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
                         {g.rows.map((r) => {
                           const editing = draft?.id === r.id ? draft : null;
                           return (
-                            <div key={r.id} className={`row grid min-h-9 min-w-max items-center border-b border-line text-[12.5px] ${editing ? 'row-active' : ''}`} style={{ gridTemplateColumns: gridCols }}>
+                            <div key={r.id} className={`row grid min-h-9 min-w-max items-center border-b border-line text-[12.5px] ${editing ? 'row-active' : ''} ${isActivePerson(r) ? '' : 'opacity-60'}`} style={{ gridTemplateColumns: gridCols }}>
                               <span className="sticky start-0 z-10 flex h-full items-center justify-center bg-inherit">
-                                <input type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label={`בחירת ${r.name}`} checked={selected.has(r.id)} onChange={() => toggleOne(r.id)} />
+                                <input type="checkbox" className="h-4 w-4 cursor-pointer accent-primary" aria-label={`בחירת ${r.name}`} disabled={!isActivePerson(r)} checked={selected.has(r.id)} onChange={() => toggleOne(r.id)} />
                               </span>
                               <span className="sticky z-10 flex h-full items-center gap-0.5 bg-inherit px-1.5" style={{ insetInlineStart: ACTIONS_AT }}>
                                 {editing ? (
@@ -216,10 +229,18 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
                                     <button type="button" className="icon-btn icon-btn-ok" title="שמירה" aria-label="שמירת השינויים" onClick={saveDraft}><IconCheck size={16} /></button>
                                     <button type="button" className="icon-btn" title="ביטול" aria-label="ביטול העריכה" onClick={() => setDraft(null)}><IconX size={14} /></button>
                                   </>
-                                ) : (
+                                ) : isActivePerson(r) ? (
                                   <>
                                     <button type="button" className="icon-btn" title="שינוי מיקום בארגון" aria-label={`שינוי מיקום בארגון של ${r.name}`} onClick={() => setMoving(r)}><IconMove size={17} /></button>
                                     <button type="button" className="icon-btn" title="עריכת נתונים" aria-label={`עריכת הנתונים של ${r.name}`} onClick={() => setDraft(toDraft(r))}><IconEdit size={16} /></button>
+                                    <button type="button" className="icon-btn icon-btn-danger" title="הסרה מהיחידה / מחיקה" aria-label={`הסרת ${r.name}`} onClick={() => setRemoving(r)}><IconTrash size={16} /></button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button type="button" className="icon-btn" title="החזרה ליחידה" aria-label={`החזרת ${r.name} ליחידה`}
+                                      onClick={() => { const err = s.restorePersonToUnit(r.id); s.showToast(err ?? `${r.name} הוחזר/ה ליחידה`); }}><IconRestore size={17} /></button>
+                                    <button type="button" className="icon-btn" title="עריכת נתונים" aria-label={`עריכת הנתונים של ${r.name}`} onClick={() => setDraft(toDraft(r))}><IconEdit size={16} /></button>
+                                    <button type="button" className="icon-btn icon-btn-danger" title="מחיקה לצמיתות" aria-label={`הסרת ${r.name}`} onClick={() => setRemoving(r)}><IconTrash size={16} /></button>
                                   </>
                                 )}
                               </span>
@@ -229,6 +250,7 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
                                 ) : (
                                   <>
                                     <a href={personHref(r.id)} className="truncate text-ink no-underline hover:underline" title="לדף האדם">{r.name}</a>
+                                    {!isActivePerson(r) && <span className="chip chip-neutral" title={r.leftNote ?? undefined}>עזב/ה {formatDate(r.leftAt)}</span>}
                                     {s.commanders.org === r.id && <span className="chip chip-cmd">רע"ן</span>}
                                     {r.sectionId && s.commanders.sections[r.sectionId] === r.id && <span className="chip chip-cmd">מפקד המדור</span>}
                                   </>
@@ -256,6 +278,8 @@ export function PeopleView({ viewCode }: { viewCode?: string | null }) {
       )}
 
       {moving && <MoveDialog person={moving} onClose={() => setMoving(null)} />}
+      {removing && <RemovePersonDialog person={removing} onClose={() => setRemoving(null)} />}
+      {commanderFor && <CommanderDialog unit={commanderFor} onClose={() => setCommanderFor(null)} />}
       {adding && <AddPersonDialog onClose={() => setAdding(false)} />}
       {managing && <SectionsDialog onClose={() => setManaging(false)} />}
       {bulkMoving && <BulkMoveDialog ids={selIds} onClose={() => setBulkMoving(false)} onDone={() => setSelected(new Set())} />}

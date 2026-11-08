@@ -42,12 +42,12 @@ export function peopleSheet(rows: PersonRow[], sections: Section[], cmd: Command
     columns: [
       { header: H.mid, width: 12, type: 'number' }, { header: H.name, width: 20 }, { header: H.pop, width: 11 }, { header: H.rank, width: 9 },
       { header: H.degree, width: 9 }, { header: H.program, width: 12 }, { header: H.section, width: 18 }, { header: H.role, width: 13 },
-      { header: H.billet, width: 10 }, { header: H.entryDate, width: 13, type: 'date' }, { header: H.releaseDate, width: 13, type: 'date' },
+      { header: H.billet, width: 10 }, { header: H.entryDate, width: 13, type: 'date' }, { header: H.releaseDate, width: 13, type: 'date' }, { header: 'עזב/ה את היחידה', width: 15, type: 'date' },
       ...EXTRA.map((f) => ({ header: f.label, width: f.type === 'date' ? 15 : 11, type: f.type === 'date' ? ('date' as const) : undefined })),
     ],
     rows: rows.map((p) => [
       p.mid, p.name, POP_LABELS[p.pop], RANK_LABELS[p.rank], p.degree, p.program, secName(p.sectionId), role(p),
-      p.pop === 'keva' ? (p.billet ?? 'על תקני') : null, p.entryDate, p.releaseDate,
+      p.pop === 'keva' ? (p.billet ?? 'על תקני') : null, p.entryDate, p.releaseDate, p.leftAt ?? null,
       ...EXTRA.map((f) => {
         if (!applicable(f.key, p)) return null;
         const v = (p as unknown as Record<string, unknown>)[f.key];
@@ -82,6 +82,7 @@ export function planPeopleImport(t: Table, ctx: PeopleCtx): ImportPlan<PersonDra
       if (seenMid.has(mid)) { err(`מ.א ${mid} מופיע פעמיים בקובץ (גם בשורה ${seenMid.get(mid)})`); continue; }
       seenMid.set(mid, r.rowNumber);
       const existing = byMid.get(mid);
+      if (existing?.leftAt) { err(`${existing.name} הוסר/ה מהיחידה. יש להחזיר אותו/ה ליחידה לפני ייבוא נתונים עליו/ה`); continue; }
       const name = text(r.get(H.name));
       if (!name) { err('חסר שם'); continue; }
       const pop = parseLabel(r.get(H.pop), POP_LABELS, 'סוג אוכלוסייה');

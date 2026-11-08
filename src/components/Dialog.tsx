@@ -9,6 +9,8 @@ interface Props {
   alert?: boolean;
 }
 
+const openDialogs: symbol[] = []; // Escape closes only the top-most window
+
 /** Floating modal window: backdrop click or Escape closes; focus moves inside and returns on close. */
 export function Dialog({ title, onClose, children, footer, width = 560, alert = false }: Props) {
   const panel = useRef<HTMLDivElement>(null);
@@ -20,9 +22,11 @@ export function Dialog({ title, onClose, children, footer, width = 560, alert = 
     const previous = document.activeElement as HTMLElement | null;
     const first = panel.current?.querySelector<HTMLElement>('input, select, textarea, [data-autofocus]');
     (first ?? panel.current)?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close.current(); };
+    const me = Symbol('dialog');
+    openDialogs.push(me);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && openDialogs[openDialogs.length - 1] === me) close.current(); };
     window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('keydown', onKey); previous?.focus(); };
+    return () => { window.removeEventListener('keydown', onKey); openDialogs.splice(openDialogs.indexOf(me), 1); previous?.focus(); };
   }, []);
 
   return (

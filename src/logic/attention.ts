@@ -1,4 +1,5 @@
 import { daysBetween } from '../domain/dates';
+import { isActivePerson } from '../domain/rules';
 import type { AppData, Billet, Grant, ISODate, Person } from '../domain/types';
 
 export interface AttentionOptions {
@@ -31,7 +32,9 @@ const LEVELS = [
   { level: 'א׳' as const, done: 'dmahA' as const, elig: 'dmahAElig' as const },
 ];
 
-export function attentionItems(data: AppData, today: ISODate, opts: AttentionOptions = DEFAULT_ATTENTION): AttentionResult {
+export function attentionItems(all: AppData, today: ISODate, opts: AttentionOptions = DEFAULT_ATTENTION): AttentionResult {
+  // people who left the unit are not part of the live picture
+  const data: AppData = { ...all, people: all.people.filter(isActivePerson) };
   const open = new Map<number, number>(); // personId → billetId
   for (const a of data.assignments) if (a.end === null && a.personId !== null) open.set(a.personId, a.billetId);
   const present = (p: Person) => (p.releaseDate === null || p.releaseDate > today) && !(p.pop === 'keva' && p.entryDate && p.entryDate > today);
