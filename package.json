@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
     "test": "vitest run",
     "build:server": "node scripts/package.mjs --dev",
-    "server": "npm run build:server && DATA_DIR=${DATA_DIR:-./data} PUBLIC_DIR=${PUBLIC_DIR:-./dist} node build/server.mjs",
+    "server": "node scripts/dev-server.mjs",
     "package": "npm run typecheck && node scripts/package.mjs",
     "package:single": "node scripts/single-file.mjs"
   },

@@ -167,9 +167,10 @@ describe('static files', () => {
   });
   it('does not leak files outside the web folder', async () => {
     const { base } = await start();
-    for (const p of ['/..%2fpb-secret.txt', '/%2e%2e/pb-secret.txt', '/assets/..%2f..%2fpb-secret.txt', '/..%5c..%5cetc%5cpasswd', '/%00']) {
+    for (const p of ['/assets/app-abc.js::$DATA', '/C:/Windows/win.ini', '/..%2fpb-secret.txt', '/%2e%2e/pb-secret.txt', '/assets/..%2f..%2fpb-secret.txt', '/..%5c..%5cetc%5cpasswd', '/%00']) {
       const r = await fetch(base + p);
       expect([400, 403, 404]).toContain(r.status);
+      if (p.includes('$DATA') || p.includes('C:')) expect(r.status).toBe(400);
       expect(await r.text()).not.toContain('secret');
     }
     expect((await fetch(`${base}/missing.js`)).status).toBe(404);
@@ -263,5 +264,42 @@ describe('backups and damaged files', () => {
   it('skips an unreadable line in the log without losing the rest', () => {
     fs.writeFileSync(path.join(dir, 'audit.jsonl'), `${JSON.stringify({ id: 1, at: '2026-01-01T00:00:00Z', actor: 'a', kind: 'person', entityId: '1', personId: 1, summary: 's', details: [] })}\n{broken\n`);
     expect(open().audit).toHaveLength(1);
+  });
+});
+
+describe('mkdirs', () => {
+  it('creates nested folders, tolerates existing ones, and refuses odd paths without hanging', async () => {
+    const { mkdirs } = await import('./mkdirs');
+    const deep = path.join(dir, 'a', 'b', 'c');
+    mkdirs(deep); mkdirs(deep);
+    expect(fs.statSync(deep).isDirectory()).toBe(true);
+    const file = path.join(dir, 'f.txt'); fs.writeFileSync(file, 'x');
+    expect(() => mkdirs(path.join(file, 'sub'))).toThrow(/not a folder/);
+    expect(() => mkdirs(path.join(dir, ...Array.from({ length: 30 }, (_, i) => `d${i}`)))).toThrow(/within 12 levels/); // bounded on purpose
+  });
+});
+
+describe('self check (node server.mjs --check)', () => {
+  it('passes on a normal folder and leaves nothing behind', async () => {
+    const { selfCheck } = await import('./selfcheck');
+    const res = await selfCheck({ dataDir: dir, publicDir: pub, port: 0 + 38911, host: '127.0.0.1' });
+    expect(res.filter((r) => !r.ok)).toEqual([]);
+    expect(res.some((r) => r.name.includes('only one server'))).toBe(true);
+    expect(fs.readdirSync(dir).filter((f) => f.startsWith('.selfcheck'))).toEqual([]);
+  });
+  it('reports clearly when the folder cannot be used or the port is taken', async () => {
+    const { selfCheck, printCheck } = await import('./selfcheck');
+    const file = path.join(dir, 'a-file');
+    fs.writeFileSync(file, 'x');
+    const bad = await selfCheck({ dataDir: path.join(file, 'sub'), publicDir: path.join(pub, 'nope'), port: 38912, host: '127.0.0.1' });
+    expect(bad.filter((r) => !r.ok).length).toBeGreaterThanOrEqual(2);
+    const lines: string[] = [];
+    expect(printCheck(bad, (m) => lines.push(m))).toBe(false);
+    expect(lines.join('\n')).toMatch(/FAILED/);
+    const net = await import('node:net');
+    const busy = net.createServer(); await new Promise<void>((r) => busy.listen(38913, '127.0.0.1', r));
+    const taken = await selfCheck({ dataDir: dir, publicDir: pub, port: 38913, host: '127.0.0.1' });
+    busy.close();
+    expect(taken.find((r) => r.name.includes('port'))?.detail).toMatch(/already used/);
   });
 });

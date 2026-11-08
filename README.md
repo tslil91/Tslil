@@ -14,10 +14,13 @@ npm test             # unit tests (Vitest), including the server
 npm run build        # typecheck + production build into dist/
 npm run server       # build the server and run it on http://localhost:8080 serving dist/ (data in ./data)
 npm run package      # offline release: release/personnel-billets (+ .tar.gz and .zip)
+npm run package -- --node-win path/to/node.exe   # also release/personnel-billets-windows-*.zip, which bundles node.exe (nothing to install on Windows)
 npm run package:single  # ONE html file (release/personnel-billets-standalone.html): open by double-click, no server, local mode
 ```
 
-Requires Node 20+. Minimum window width 1024px.
+Requires Node 20+ to build (the Windows package needs nothing installed). Works on Windows, macOS and Linux. Minimum window width 1024px.
+
+`node server.mjs --check` (or `check.cmd` on Windows) tests a machine and data folder before the first start: file replacement, the single-server lock, free port.
 
 ## Two ways to run
 

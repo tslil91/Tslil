@@ -3,8 +3,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DataStore, LockError } from './datastore';
 import { createApp } from './http';
+import { printCheck, selfCheck } from './selfcheck';
 
 const HELP = `Personnel & Billets server
+
+Usage:  node server.mjs            start the server
+        node server.mjs --check    test this machine and the data folder, then exit
 
 Environment variables (all optional):
   PORT            port to listen on                      (default 8080)
@@ -26,6 +30,10 @@ const dataDir = path.resolve(env.DATA_DIR ?? './data');
 const publicDir = path.resolve(env.PUBLIC_DIR ?? path.join(here, 'public'));
 
 if (!Number.isInteger(port) || port < 1 || port > 65535) { console.error(`Invalid PORT: ${env.PORT}`); process.exit(2); }
+if (process.argv.includes('--check')) {
+  console.log(`Checking this machine (data folder ${dataDir})...\n`);
+  process.exit(printCheck(await selfCheck({ dataDir, publicDir, port, host })) ? 0 : 1);
+}
 if (!fs.existsSync(path.join(publicDir, 'index.html'))) { console.error(`The web app was not found in ${publicDir} (index.html is missing). Set PUBLIC_DIR.`); process.exit(2); }
 
 let store: DataStore;

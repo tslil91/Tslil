@@ -26,11 +26,23 @@
 5. בהפעלה הראשונה (שרת ריק) המערכת שואלת: התחלה ריקה / שחזור מגיבוי / נתוני הדגמה. אחרי ההקמה אפשר לייבא אנשים ותקנים מ־Excel.
 6. להפעלה אוטומטית: ראה `personnel-billets.service` (systemd), או הוסף ל־`rc.local` / מתזמן המשימות.
 
+### Windows (חבילת `personnel-billets-windows-*.zip`)
+החבילה כוללת `node.exe` (Node.js 22, ההפצה הרשמית מ־nodejs.org) — **לא צריך להתקין כלום**.
+1. חלץ את ה־zip (קליק ימני ← Extract All) לתיקייה, למשל `C:\personnel-billets`. אם Windows חוסם קבצים שהגיעו מבחוץ: קליק ימני על ה־zip ← Properties ← Unblock, לפני החילוץ.
+2. העתק את `config.cmd.example` ל־`config.cmd` וערוך: `DATA_DIR` (תיקייה מקומית, או נתיב רשת מהצורה `\\שרת\שיתוף\personnel-billets-data`; מומלץ נתיב UNC ולא אות כונן ממופה).
+3. לחיצה כפולה על **`check.cmd`**: בודק את המחשב ואת תיקיית הנתונים (כתיבה, החלפת קבצים בטוחה, **נעילת "שרת אחד בלבד"**, פורט פנוי). כל השורות צריכות להיות `OK`. חשוב במיוחד כשהתיקייה נמצאת על שיתוף רשת.
+4. לחיצה כפולה על **`start.cmd`**. בהפעלה הראשונה Windows שואל אם לאפשר ל־`node.exe` גישה לרשת — אשרו (רשת פרטית). **אל תסגרו את החלון השחור** — סגירתו עוצרת את השרת.
+5. במחשב השרת פותחים `http://localhost:8080`; משתמשים אחרים פותחים `http://<שם-המחשב>:8080` (שם המחשב: הפקודה `hostname`).
+6. אם חומת האש חוסמת משתמשים אחרים, הרצה כמנהל: `netsh advfirewall firewall add rule name="Personnel Billets" dir=in action=allow protocol=TCP localport=8080`.
+7. הפעלה אוטומטית בכניסה למחשב (כמשתמש שיש לו גישה לשיתוף): `schtasks /Create /SC ONLOGON /TN "PersonnelBillets" /TR "\"C:\personnel-billets\start.cmd\""`.
+8. **NFS מ־Windows:** דורש את התכונה "Client for NFS" (Windows Pro / Enterprise) או שימוש בשיתוף SMB. בכל מקרה — הריצו `check.cmd` על התיקייה הסופית ובדקו שנעילת "שרת אחד בלבד" עוברת.
+9. **מקור `node.exe`:** הועתק ללא שינוי מ־https://nodejs.org/dist/v22.23.4/win-x64/node.exe (SHA-256: `dccc52de28d8df2ee22d2062424f8c563070d95d8ad70c54c4bf01d590dec14f`, זהה לסכום הרשמי ב־`SHASUMS256.txt`). בארגון עם מדיניות קבצים מחמירה אפשר להחליף את `node\node.exe` בגרסה שאושרה אצלכם (Node.js 20 ומעלה).
+10. אם תוכנת אבטחה חוסמת את `node.exe` או את קובצי ה־`.cmd`, יש לבקש אישור מאיש האבטחה; ללא זה אין דרך אחרת להריץ שרת.
+
 ### אם קשה להתקין — דרכים נוספות להפעלה
 1. **קובץ HTML בודד, בלי שרת ובלי התקנה** (`personnel-billets-standalone.html`): פותחים בדפדפן בלחיצה כפולה. עובד ללא רשת. כל דפדפן שומר נתונים משלו (מצב מקומי), ולכן זה מתאים להתרשמות או למשתמש יחיד — **לא** לעבודה משותפת. אפשר לגבות ולשחזר דרך "ניהול נתונים".
-2. **שרת בלי `start.sh`**: אם אי אפשר להריץ סקריפט, מריצים ישירות: `node server.mjs` (Linux) או `set DATA_DIR=D:\data` ואז `node server.mjs` (Windows, אחרי `set PORT=8080`). המשתנים זהים להגדרות ב־`config.env`.
+2. **שרת בלי סקריפטים**: אם אי אפשר להריץ סקריפט, מריצים ישירות: `node server.mjs` (Linux), או ב־Windows `set DATA_DIR=D:\data` ואז `node\node.exe server.mjs`. המשתנים זהים להגדרות בקובץ ההגדרות. בדיקת תקינות בלי הפעלה: `node server.mjs --check`.
 3. **החבילה כקובץ zip או כקובץ טקסט**: אם `.tar.gz` או `.md` חסומים, השתמשו ב־`personnel-billets-0.1.0.zip`; המדריך זמין גם כ־`INSTALL.txt`.
-4. אין אצלכם Node.js: אפשר לבנות קובץ הרצה יחיד (לינוקס x64) — פנו אליי עם מערכת ההפעלה והארכיטקטורה.
 
 ### כלל חשוב: שרת אחד בלבד על כל תיקיית נתונים
 קבצים משותפים ב־NFS אינם בטוחים לכתיבה משני תהליכים במקביל. לכן השרת נועל את התיקייה (`server.lock`) ושרת שני שיופעל על אותה תיקייה **יסרב לעלות** עם הודעה ברורה.
@@ -85,11 +97,23 @@
 5. On the very first start (empty server) you choose: start empty / restore from a backup / demo data. Afterwards, people and billets can be imported from Excel.
 6. To start automatically see `personnel-billets.service` (systemd) or use your usual task scheduler.
 
+### Windows (the `personnel-billets-windows-*.zip` package)
+The package contains `node.exe` (Node.js 22, the official build from nodejs.org), so **nothing needs to be installed**.
+1. Extract the zip (right-click → Extract All) to a folder, e.g. `C:\personnel-billets`. If Windows blocks files that came from outside: right-click the zip → Properties → Unblock, before extracting.
+2. Copy `config.cmd.example` to `config.cmd` and edit it: `DATA_DIR` (a local folder, or a network path like `\\server\share\personnel-billets-data`; a UNC path is preferable to a mapped drive letter).
+3. Double-click **`check.cmd`**: it tests the machine and the data folder (writing, safe file replacement, **the "only one server" lock**, free port). Every line must say `OK`. This matters most when the folder is on a network share.
+4. Double-click **`start.cmd`**. On first start Windows asks whether `node.exe` may use the network — allow it (private network). **Do not close the black window** — closing it stops the server.
+5. On the server machine open `http://localhost:8080`; other users open `http://<computer-name>:8080` (the name: run `hostname`).
+6. If the firewall blocks other users, run as administrator: `netsh advfirewall firewall add rule name="Personnel Billets" dir=in action=allow protocol=TCP localport=8080`.
+7. To start automatically at log-on (as a user who can reach the share): `schtasks /Create /SC ONLOGON /TN "PersonnelBillets" /TR "\"C:\personnel-billets\start.cmd\""`.
+8. **NFS from Windows:** needs the "Client for NFS" feature (Windows Pro / Enterprise), or use an SMB share. Either way, run `check.cmd` on the final folder and make sure the "only one server" lock check passes.
+9. **Where `node.exe` comes from:** copied unchanged from https://nodejs.org/dist/v22.23.4/win-x64/node.exe (SHA-256 `dccc52de28d8df2ee22d2062424f8c563070d95d8ad70c54c4bf01d590dec14f`, identical to the official `SHASUMS256.txt`). If your organization requires an approved build, replace `node\node.exe` with it (Node.js 20 or newer).
+10. If security software blocks `node.exe` or the `.cmd` files, ask your security officer for an exception; there is no other way to run a server.
+
 ### If installing is difficult — other ways to run it
 1. **A single HTML file, no server, no installation** (`personnel-billets-standalone.html`): open it in a browser by double-clicking. It works without any network. Each browser keeps its own data (local mode), so it suits a trial or a single user — **not** shared work. Back up and restore through "ניהול נתונים".
-2. **The server without `start.sh`**: if scripts cannot run, start it directly: `node server.mjs` (Linux), or on Windows `set DATA_DIR=D:\data` and `set PORT=8080` and then `node server.mjs`. The variables are the same as in `config.env`.
+2. **The server without scripts**: if scripts cannot run, start it directly: `node server.mjs` (Linux), or on Windows `set DATA_DIR=D:\data` and then `node\node.exe server.mjs`. The variables are the same as in the config file. Check without starting: `node server.mjs --check`.
 3. **The package as a zip or a text file**: if `.tar.gz` or `.md` files are blocked, use `personnel-billets-0.1.0.zip`; the guide is also provided as `INSTALL.txt`.
-4. No Node.js on the machine: a single executable (Linux x64) can be built — tell the maintainer the operating system and CPU architecture.
 
 ### Important rule: exactly one server per data folder
 Files on NFS are not safe for two processes writing at once. The server therefore locks the folder (`server.lock`); a second server started on the same folder **refuses to start** with a clear message.

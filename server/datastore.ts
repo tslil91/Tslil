@@ -4,6 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AppData, AuditEntry, AuditKind } from '../src/domain/types';
 import { filterAudit, type AuditFilter } from '../src/logic/auditFilter';
+import { mkdirs } from './mkdirs';
 
 /**
  * File-based store designed for a shared NFS directory:
@@ -111,7 +112,7 @@ export class DataStore {
       backupEveryMs: 6 * 3600_000, keepBackups: 60, staleLockMs: 120_000, heartbeatMs: 15_000, forceUnlock: false,
       now: () => Date.now(), log: (m: string) => console.log(m), ...opts,
     };
-    fs.mkdirSync(path.join(o.dataDir, 'backups'), { recursive: true });
+    mkdirs(path.join(o.dataDir, 'backups'));
     const s = new DataStore(o);
     s.acquireLock();
     try { s.load(); } catch (e) { s.close(); throw e; }
@@ -186,11 +187,22 @@ export class DataStore {
     this.o.log(`Loaded state version ${this.version}, ${this.audit.length} log entries.`);
   }
 
+  /** Windows can refuse a rename for a moment while an antivirus or the indexer holds the file; retry briefly. */
+  private renameWithRetry(from: string, to: string): void {
+    for (let attempt = 0; ; attempt++) {
+      try { fs.renameSync(from, to); return; } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code ?? '';
+        if (attempt >= 6 || !['EPERM', 'EBUSY', 'EACCES'].includes(code)) throw e;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30 * (attempt + 1));
+      }
+    }
+  }
+
   private writeAtomic(file: string, content: string): void {
     const tmp = `${file}.tmp-${process.pid}`;
     const fd = fs.openSync(tmp, 'w');
     try { fs.writeFileSync(fd, content); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-    fs.renameSync(tmp, file);
+    this.renameWithRetry(tmp, file);
     try { const dfd = fs.openSync(path.dirname(file), 'r'); try { fs.fsyncSync(dfd); } finally { fs.closeSync(dfd); } } catch { /* directory fsync is best effort (not supported everywhere) */ }
   }
 

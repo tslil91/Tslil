@@ -99,7 +99,7 @@ export function createApp(opts: AppOptions): http.Server {
     if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'Method not allowed');
     let rel: string;
     try { rel = decodeURIComponent(url.pathname); } catch { throw new HttpError(400, 'Bad path'); }
-    if (rel.includes('\0')) throw new HttpError(400, 'Bad path');
+    if (rel.includes('\0') || rel.includes(':')) throw new HttpError(400, 'Bad path'); // ':' = Windows drive letters / alternate data streams
     let file = path.resolve(path.join(publicDir, rel === '/' ? 'index.html' : rel));
     if (file !== publicDir && !file.startsWith(publicDir + path.sep)) throw new HttpError(403, 'Forbidden'); // path traversal
     let st: fs.Stats | null = null;
