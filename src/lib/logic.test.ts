@@ -71,3 +71,13 @@ describe("coupon usage", () => {
     expect(withValue(a, null)).toMatchObject({ value: null, remaining: null });
   });
 });
+
+import { cleanKey, cleanUrl } from "./supabase";
+
+describe("Supabase settings", () => {
+  it("cleans common copy-paste slips", () => {
+    expect(cleanUrl(" https://abc.supabase.co/rest/v1/ ")).toBe("https://abc.supabase.co");
+    expect(cleanUrl('"https://abc.supabase.co/"')).toBe("https://abc.supabase.co");
+    expect(cleanKey(" 'sb_publishable_x' ")).toBe("sb_publishable_x");
+  });
+});

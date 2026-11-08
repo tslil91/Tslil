@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { disablePush, enablePush, isIOS, pushState, type PushState } from "../lib/push";
-import type { Household } from "../lib/supabase";
+import { configProblems, type Household } from "../lib/supabase";
 import { Sheet } from "./Sheet";
 
 interface Props {
@@ -51,8 +51,13 @@ export function AccountSheet({ mode, household, members, onClose, onSignOut, onR
       {mode === "demo" ? (
         <>
           <p className="muted" style={{ margin: 0 }}>
-            האפליקציה עוד לא מחוברת לשרת, אז הנתונים נשמרים רק בטלפון הזה ולא מסתנכרנים. אחרי חיבור ל־Supabase (לפי מדריך ההתקנה) תתבקשו להתחבר וליצור בית משותף.
+            האפליקציה לא מחוברת ל־Supabase, אז הנתונים נשמרים רק בטלפון הזה ולא מסתנכרנים.
           </p>
+          <div>
+            <div className="section-title">מה חסר בהגדרות של Vercel</div>
+            <ul style={{ margin: 0, paddingInlineStart: 20 }}>{configProblems.map((p) => <li key={p} className="ltr" style={{ textAlign: "start" }}>{p}</li>)}</ul>
+            <p className="muted" style={{ margin: "6px 0 0" }}>מוסיפים ב־Vercel תחת Settings → Environment Variables, ואז Redeploy. אחרי זה תופיע כאן מסך התחברות.</p>
+          </div>
           <button className="btn ghost" onClick={onResetDemo}>איפוס נתוני הדוגמה</button>
         </>
       ) : (

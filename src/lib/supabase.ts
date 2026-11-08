@@ -2,10 +2,24 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { fileExt, type Store } from "./store";
 import type { Item } from "./types";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+/** Tolerate common copy-paste slips: spaces, quotes, and the "/rest/v1/" suffix shown on Supabase's Data API page. */
+export function cleanUrl(raw: string | undefined): string {
+  return (raw ?? "").trim().replace(/^["']|["']$/g, "").replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+}
+export function cleanKey(raw: string | undefined): string {
+  return (raw ?? "").trim().replace(/^["']|["']$/g, "");
+}
 
-export const cloudConfigured = Boolean(url && key);
+const url = cleanUrl(import.meta.env.VITE_SUPABASE_URL as string | undefined);
+const key = cleanKey(import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
+
+/** Settings that are missing or malformed in this build (empty when connected). */
+export const configProblems: string[] = [
+  ...(!url ? ["VITE_SUPABASE_URL חסר"] : !/^https:\/\/.+/.test(url) ? ["VITE_SUPABASE_URL צריך להתחיל ב־https://"] : []),
+  ...(!key ? ["VITE_SUPABASE_ANON_KEY חסר"] : /^sb_secret_/.test(key) ? ["VITE_SUPABASE_ANON_KEY הוא המפתח הסודי. צריך את ה־publishable"] : []),
+];
+
+export const cloudConfigured = configProblems.length === 0;
 export const supabase: SupabaseClient | null = cloudConfigured ? createClient(url!, key!) : null;
 
 const BUCKET = "attachments";

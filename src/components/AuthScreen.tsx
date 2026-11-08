@@ -26,7 +26,11 @@ export function AuthScreen() {
       ? await supabase!.auth.signUp({ email, password, options: { data: { display_name: name.trim() } } })
       : await supabase!.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (res.error) return setErr(MESSAGES[res.error.message] ?? res.error.message);
+    if (res.error) {
+      const m = res.error.message;
+      if (/fetch|network|load failed/i.test(m)) return setErr("אין חיבור לשרת Supabase. בדקו את החיבור לאינטרנט ואת כתובת הפרויקט (VITE_SUPABASE_URL) ב־Vercel.");
+      return setErr(MESSAGES[m] ?? m);
+    }
     if (signup && !res.data.session) setInfo("שלחנו אליך אימייל לאישור. אחרי האישור חוזרים לכאן ומתחברים.");
   };
 

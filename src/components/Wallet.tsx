@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { daysUntil, isHistory, todayISO } from "../lib/dates";
 import { blankItem } from "../lib/items";
 import type { Store } from "../lib/store";
-import type { Household } from "../lib/supabase";
+import { configProblems, type Household } from "../lib/supabase";
 import type { Item } from "../lib/types";
 import { AccountSheet } from "./AccountSheet";
 import { ItemCard } from "./ItemCard";
@@ -43,8 +43,9 @@ export function Wallet({ store, me, members, household, onSignOut, onResetDemo }
     try {
       setItems(await store.list());
       setLoadError("");
-    } catch {
-      setLoadError("לא הצלחתי לטעון את הנתונים. בדקו את החיבור לאינטרנט.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String((e as { message?: string })?.message ?? e);
+      setLoadError(`לא הצלחתי לטעון את הנתונים מ־Supabase: ${msg}`);
     } finally {
       setLoaded(true);
     }
@@ -117,7 +118,7 @@ export function Wallet({ store, me, members, household, onSignOut, onResetDemo }
       </header>
 
       {store.mode === "demo" && (
-        <div className="banner">מצב הדגמה: הנתונים נשמרים רק בטלפון הזה. <button className="link" onClick={() => setAccount(true)}>פרטים</button></div>
+        <div className="banner">מצב הדגמה, לא מחובר ל־Supabase ({configProblems.join(", ")}). הנתונים נשמרים רק בטלפון הזה. <button className="link" onClick={() => setAccount(true)}>פרטים</button></div>
       )}
 
       <main className="list">
