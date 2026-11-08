@@ -13,7 +13,8 @@ npm run dev          # http://localhost:5173 — local demo mode (data in the br
 npm test             # unit tests (Vitest), including the server
 npm run build        # typecheck + production build into dist/
 npm run server       # build the server and run it on http://localhost:8080 serving dist/ (data in ./data)
-npm run package      # offline release: release/personnel-billets (+ .tar.gz)
+npm run package      # offline release: release/personnel-billets (+ .tar.gz and .zip)
+npm run package:single  # ONE html file (release/personnel-billets-standalone.html): open by double-click, no server, local mode
 ```
 
 Requires Node 20+. Minimum window width 1024px.

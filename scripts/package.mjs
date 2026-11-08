@@ -71,11 +71,16 @@ NoNewPrivileges=true
 WantedBy=multi-user.target
 `);
 fs.copyFileSync(path.join(root, 'docs/INSTALL.md'), path.join(outDir, 'INSTALL.md'));
+// the same guide as plain text, for places that block .md files
+fs.copyFileSync(path.join(root, 'docs/INSTALL.md'), path.join(outDir, 'INSTALL.txt'));
 
 let sha = 'unknown';
 try { sha = execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim(); } catch { /* not a git checkout */ }
 write('VERSION.txt', `personnel-billets ${pkg.version}\nbuilt ${new Date().toISOString()}\ncommit ${sha}\n`);
 
 const tarName = `personnel-billets-${pkg.version}.tar.gz`;
-try { run(`tar -czf release/${tarName} -C release personnel-billets`); console.log(`archive -> release/${tarName}`); } catch { console.log('tar not available: copy the folder as is'); }
+try { run(`tar -czf release/${tarName}`.replace('release/', 'release/') + ' -C release personnel-billets'); console.log(`archive -> release/${tarName}`); } catch { console.log('tar not available: copy the folder as is'); }
+// a .zip as well (some environments block .tar.gz); skipped when the zip tool is missing
+const zipName = tarName.replace(/\.tar\.gz$/, '.zip');
+try { fs.rmSync(path.join(root, 'release', zipName), { force: true }); execSync(`zip -qr ${zipName} personnel-billets`, { cwd: path.join(root, 'release'), stdio: 'inherit' }); console.log(`archive -> release/${zipName}`); } catch { console.log('zip tool not available: skipped the .zip'); }
 console.log(`\nRelease ready: release/personnel-billets  (copy it to the target machine / NFS)`);

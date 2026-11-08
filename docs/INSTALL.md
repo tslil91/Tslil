@@ -26,6 +26,12 @@
 5. בהפעלה הראשונה (שרת ריק) המערכת שואלת: התחלה ריקה / שחזור מגיבוי / נתוני הדגמה. אחרי ההקמה אפשר לייבא אנשים ותקנים מ־Excel.
 6. להפעלה אוטומטית: ראה `personnel-billets.service` (systemd), או הוסף ל־`rc.local` / מתזמן המשימות.
 
+### אם קשה להתקין — דרכים נוספות להפעלה
+1. **קובץ HTML בודד, בלי שרת ובלי התקנה** (`personnel-billets-standalone.html`): פותחים בדפדפן בלחיצה כפולה. עובד ללא רשת. כל דפדפן שומר נתונים משלו (מצב מקומי), ולכן זה מתאים להתרשמות או למשתמש יחיד — **לא** לעבודה משותפת. אפשר לגבות ולשחזר דרך "ניהול נתונים".
+2. **שרת בלי `start.sh`**: אם אי אפשר להריץ סקריפט, מריצים ישירות: `node server.mjs` (Linux) או `set DATA_DIR=D:\data` ואז `node server.mjs` (Windows, אחרי `set PORT=8080`). המשתנים זהים להגדרות ב־`config.env`.
+3. **החבילה כקובץ zip או כקובץ טקסט**: אם `.tar.gz` או `.md` חסומים, השתמשו ב־`personnel-billets-0.1.0.zip`; המדריך זמין גם כ־`INSTALL.txt`.
+4. אין אצלכם Node.js: אפשר לבנות קובץ הרצה יחיד (לינוקס x64) — פנו אליי עם מערכת ההפעלה והארכיטקטורה.
+
 ### כלל חשוב: שרת אחד בלבד על כל תיקיית נתונים
 קבצים משותפים ב־NFS אינם בטוחים לכתיבה משני תהליכים במקביל. לכן השרת נועל את התיקייה (`server.lock`) ושרת שני שיופעל על אותה תיקייה **יסרב לעלות** עם הודעה ברורה.
 - אם השרת קרס והנעילה נשארה: באותו מחשב (למשל הפעלה מחדש אוטומטית של systemd) השרת מזהה שהתהליך הישן אינו קיים ועולה מיד. ממחשב אחר הנעילה פגה אוטומטית אחרי ~2 דקות; אפשר גם להפעיל עם `FORCE_UNLOCK=1` (רק לאחר שוידאת שאין שרת אחר פעיל).
@@ -78,6 +84,12 @@
 4. Users open the address. Each user is asked for a name once (for the change log only — there are no passwords).
 5. On the very first start (empty server) you choose: start empty / restore from a backup / demo data. Afterwards, people and billets can be imported from Excel.
 6. To start automatically see `personnel-billets.service` (systemd) or use your usual task scheduler.
+
+### If installing is difficult — other ways to run it
+1. **A single HTML file, no server, no installation** (`personnel-billets-standalone.html`): open it in a browser by double-clicking. It works without any network. Each browser keeps its own data (local mode), so it suits a trial or a single user — **not** shared work. Back up and restore through "ניהול נתונים".
+2. **The server without `start.sh`**: if scripts cannot run, start it directly: `node server.mjs` (Linux), or on Windows `set DATA_DIR=D:\data` and `set PORT=8080` and then `node server.mjs`. The variables are the same as in `config.env`.
+3. **The package as a zip or a text file**: if `.tar.gz` or `.md` files are blocked, use `personnel-billets-0.1.0.zip`; the guide is also provided as `INSTALL.txt`.
+4. No Node.js on the machine: a single executable (Linux x64) can be built — tell the maintainer the operating system and CPU architecture.
 
 ### Important rule: exactly one server per data folder
 Files on NFS are not safe for two processes writing at once. The server therefore locks the folder (`server.lock`); a second server started on the same folder **refuses to start** with a clear message.

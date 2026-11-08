@@ -48,6 +48,8 @@ let bootPromise: Promise<{ mode: 'local' | 'server'; needsInit: boolean }> | nul
 /** Decide between server mode (the page is served by our server) and local mode (demo in the browser). Runs once. */
 export function bootstrap() {
   bootPromise ??= (async () => {
+    // opened straight from a file (the standalone html): there is no server to ask
+    if (window.location.protocol === 'file:') return { mode: 'local' as const, needsInit: false };
     try {
       const h = await api('/api/health', { timeoutMs: 2500 });
       const body = h.ok ? ((await h.json()) as { app?: string }) : null;
