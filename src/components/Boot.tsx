@@ -3,7 +3,8 @@ import { emptyData } from '../domain/data';
 import { parseBackup } from '../logic/backup';
 import { seedData } from '../store/seed';
 import { useStore } from '../store/store';
-import { bootstrap, initializeServer } from '../sync/sync';
+import { grantAccess, pickExistingFile, pickNewFile, type FileHandle } from '../sync/fileStore';
+import { bootstrap, chooseLocalMode, connectFile, initializeServer, rememberedUsableFile } from '../sync/sync';
 
 export function ActorForm({ initial, onDone, submitLabel }: { initial: string; onDone: (name: string) => void; submitLabel: string }) {
   const [name, setName] = useState(initial);
@@ -37,9 +38,37 @@ function Screen({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/** Standalone html on a network drive: pick (or create) the shared data file. */
+function FileScreen({ onConnected }: { onConnected: (needsInit: boolean) => void }) {
+  const [known, setKnown] = useState<FileHandle | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { void rememberedUsableFile().then((k) => setKnown(k?.handle ?? null)); }, []);
+  const go = async (get: () => Promise<FileHandle>) => {
+    setBusy(true); setError(null);
+    try {
+      const h = await get();
+      if (!(await grantAccess(h, true))) { setError('לא ניתנה הרשאה לקרוא ולכתוב בקובץ.'); return; }
+      onConnected((await connectFile(h)).needsInit);
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === 'AbortError')) setError(e instanceof Error ? e.message : 'שגיאה');
+    } finally { setBusy(false); }
+  };
+  return (
+    <Screen title="קובץ נתונים משותף">
+      <p className="m-0 text-sm leading-relaxed text-muted">כדי שכל המשתמשים יראו אותם נתונים, בוחרים קובץ נתונים אחד בכונן המשותף. כל מי שיפתח את האפליקציה יבחר את אותו קובץ (פעם אחת בכל דפדפן).</p>
+      {known && <button type="button" disabled={busy} className="btn btn-primary h-[42px]" onClick={() => void go(async () => known)}>המשך עם הקובץ הקודם ({known.name})</button>}
+      <button type="button" disabled={busy} className={`btn h-[42px] ${known ? '' : 'btn-primary'}`} onClick={() => void go(pickExistingFile)}>בחירת קובץ נתונים קיים</button>
+      <button type="button" disabled={busy} className="btn h-[42px]" onClick={() => void go(pickNewFile)}>יצירת קובץ נתונים חדש (פעם אחת בלבד, לכל הארגון)</button>
+      <button type="button" disabled={busy} className="btn h-[42px]" onClick={() => { chooseLocalMode(true); window.location.reload(); }}>עבודה מקומית בדפדפן זה בלבד (ללא שיתוף)</button>
+      {error && <p role="alert" className="m-0 text-[13px] font-semibold text-danger">{error}</p>}
+    </Screen>
+  );
+}
+
 /** First screens of the app: connect to the server, ask for the user name, first-run data choice. */
 export function Boot({ children }: { children: ReactNode }) {
-  const [phase, setPhase] = useState<'loading' | 'ready' | 'init'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'file' | 'ready' | 'init'>('loading');
   const [fatal, setFatal] = useState<string | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,7 +76,7 @@ export function Boot({ children }: { children: ReactNode }) {
   const setActor = useStore((s) => s.setActor);
 
   useEffect(() => {
-    bootstrap().then((r) => setPhase(r.needsInit ? 'init' : 'ready')).catch((e: unknown) => setFatal(e instanceof Error ? e.message : 'שגיאה לא ידועה'));
+    bootstrap().then((r) => setPhase(r.needsFile ? 'file' : r.needsInit ? 'init' : 'ready')).catch((e: unknown) => setFatal(e instanceof Error ? e.message : 'שגיאה לא ידועה'));
   }, []);
 
   if (fatal) {
@@ -59,6 +88,7 @@ export function Boot({ children }: { children: ReactNode }) {
     );
   }
   if (phase === 'loading') return <Screen title="טוען…"><p role="status" className="m-0 text-sm text-muted">מתחבר לשרת ומעדכן נתונים</p></Screen>;
+  if (phase === 'file') return <FileScreen onConnected={(i) => setPhase(i ? 'init' : 'ready')} />;
   if (!actor) return <Screen title="ברוכים הבאים"><ActorForm initial="" submitLabel="המשך" onDone={setActor} /></Screen>;
 
   if (phase === 'init') {

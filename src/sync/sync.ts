@@ -4,6 +4,7 @@ import type { AppData } from '../domain/types';
 import type { AuditDraft } from '../logic/audit';
 import { applyRemoteData, setServerHandler } from '../store/changes';
 import { runtime, useStore } from '../store/store';
+import { fileApi, fileConnected, fileSupported, grantAccess, rememberedFile, useFile, type FileHandle } from './fileStore';
 
 export type SyncStatus = 'online' | 'offline';
 interface SyncState {
@@ -22,6 +23,7 @@ const POLL_MS = 4000;
 const RETRY_MS = 3000;
 
 async function api(path: string, init: { method?: string; body?: unknown; timeoutMs?: number } = {}): Promise<Response> {
+  if (fileConnected()) return fileApi(path, { method: init.method, body: init.body, actor: useStore.getState().actor });
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), init.timeoutMs ?? 10_000);
   try {
@@ -43,13 +45,43 @@ export const apiGetJson = async <T>(path: string): Promise<T> => {
 
 // ----- start up
 
-let bootPromise: Promise<{ mode: 'local' | 'server'; needsInit: boolean }> | null = null;
+export type BootResult = { mode: 'local' | 'server'; needsInit: boolean; needsFile?: boolean };
+let bootPromise: Promise<BootResult> | null = null;
+
+const LOCAL_CHOICE = 'personnel-billets-local-choice';
+export const chooseLocalMode = (on: boolean) => { try { if (on) localStorage.setItem(LOCAL_CHOICE, '1'); else localStorage.removeItem(LOCAL_CHOICE); } catch { /* ignore */ } };
+const localChosen = () => { try { return localStorage.getItem(LOCAL_CHOICE) === '1'; } catch { return false; } };
+
+/** Standalone html on a network drive: connect to the shared data file the user picked. */
+export async function connectFile(h: FileHandle): Promise<{ needsInit: boolean }> {
+  await useFile(h);
+  runtime.serverMode = true;
+  set({ mode: 'server' });
+  const { version, data } = await apiGetJson<{ version: number; data: AppData | null }>('/api/state');
+  set({ version });
+  if (data === null) return { needsInit: true };
+  applyRemoteData(data);
+  startSync();
+  void refreshInfo();
+  return { needsInit: false };
+}
+
+/** The file remembered by this browser, when it can be used without asking again. */
+export async function rememberedUsableFile(): Promise<{ handle: FileHandle; ready: boolean } | null> {
+  const h = await rememberedFile();
+  return h ? { handle: h, ready: await grantAccess(h, false).catch(() => false) } : null;
+}
 
 /** Decide between server mode (the page is served by our server) and local mode (demo in the browser). Runs once. */
 export function bootstrap() {
   bootPromise ??= (async () => {
     // opened straight from a file (the standalone html): there is no server to ask
-    if (window.location.protocol === 'file:') return { mode: 'local' as const, needsInit: false };
+    if (window.location.protocol === 'file:') {
+      if (!fileSupported() || localChosen()) return { mode: 'local' as const, needsInit: false };
+      const known = await rememberedUsableFile();
+      if (known?.ready) { try { return { mode: 'server' as const, ...(await connectFile(known.handle)) }; } catch { /* the file is gone: ask again */ } }
+      return { mode: 'local' as const, needsInit: false, needsFile: true };
+    }
     try {
       const h = await api('/api/health', { timeoutMs: 2500 });
       const body = h.ok ? ((await h.json()) as { app?: string }) : null;

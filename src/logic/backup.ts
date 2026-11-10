@@ -148,5 +148,6 @@ export function parseBackup(text: string): ParseResult {
 
   if (errors.length) return { ok: false, errors };
   const data: AppData = { sections, people, commanders, billets, assignments, grants, notes, sectionHistory };
+  if (isStr(src.unitName, 60) && src.unitName.trim()) data.unitName = src.unitName.trim();
   return { ok: true, data, counts: counts(data), createdAt: isStr(raw.createdAt, 40) ? raw.createdAt : undefined, errors: [] };
 }

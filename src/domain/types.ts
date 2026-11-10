@@ -138,4 +138,6 @@ export interface AppData {
   grants: Grant[];
   notes: Note[];
   sectionHistory: SectionPeriod[];
+  /** Name of the organization, shown in the side menu. Missing = the default name. */
+  unitName?: string;
 }

@@ -22,7 +22,7 @@ export function CellView({ row, f }: { row: PersonRow; f: FieldDef }) {
   switch (f.key) {
     case 'pop': return <span className={`chip chip-${row.pop}`}>{POP_LABELS[row.pop]}</span>;
     case 'rank': return <>{RANK_LABELS[row.rank]}</>;
-    case 'billet': return row.billet ? <span className="chip chip-neutral">תקן {row.billet}</span> : <span className="chip chip-bench">על תקני</span>;
+    case 'billet': return row.billet ? <span className="chip chip-neutral">{row.billet}</span> : <span className="chip chip-bench">על תקני</span>;
     case 'program': return row.program ? <>{row.program}</> : <Dash />;
   }
   if (f.type === 'bool') return <span className={`chip ${v ? 'chip-yes' : 'chip-no'}`}>{v ? 'כן' : 'לא'}</span>;

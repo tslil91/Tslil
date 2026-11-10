@@ -1,3 +1,4 @@
+import { DEFAULT_UNIT_NAME } from '../domain/data';
 import { formatDate, formatMoney } from '../domain/dates';
 import { POP_LABELS, RANK_LABELS } from '../domain/rules';
 import type { AppData, AuditDetail, AuditEntry, AuditKind, Billet, Grant, Person } from '../domain/types';
@@ -59,6 +60,8 @@ export function diffData(prev: AppData, next: AppData): AuditDraft[] {
   };
   const sectionName = (id: string | null, from: AppData = next): string =>
     id === null ? 'כפוף ישירות' : from.sections.find((s) => s.id === id)?.name ?? prev.sections.find((s) => s.id === id)?.name ?? id;
+
+  if (prev.unitName !== next.unitName) out.push(draft('system', 'unit', null, `שם הארגון שונה מ"${prev.unitName ?? DEFAULT_UNIT_NAME}" ל"${next.unitName ?? DEFAULT_UNIT_NAME}"`));
 
   // ----- sections
   const prevSec = new Map(prev.sections.map((s) => [s.id, s]));

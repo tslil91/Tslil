@@ -177,3 +177,7 @@ Files on NFS are not safe for two processes writing at once. The server therefor
 ## Removing people before upgrading (stop-gap)
 
 `release/remove-people-tool.html` (`npm run package:remove-tool`) is an offline page: open a backup file, tick people, save a cleaned backup, then restore it in the app via "ניהול נתונים". Commanders cannot be ticked; the original file is untouched.
+
+## Shared data from the single html file (no server)
+
+Open `personnel-billets-standalone.html` from the network drive in Chrome or Edge. On first open choose "create a new data file" (once, for the whole organization) or "pick an existing data file"; everyone else picks the same file. Changes are written to that file and others see them within seconds. Limits: no file lock (two saves in the same instant can collide; the second is refused only if the first was already written), no automatic backups (download a backup from "ניהול נתונים"), and each browser must pick the file once (Chrome may ask to re-allow access after a restart). Firefox lacks this feature: use the server package. The organization name is changed by clicking it in the side menu.

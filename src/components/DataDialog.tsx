@@ -3,7 +3,8 @@ import { downloadText } from '../io/download';
 import { backupFileName, makeBackup, parseBackup, type ParseResult } from '../logic/backup';
 import { pickData } from '../domain/data';
 import { useStore } from '../store/store';
-import { useSync } from '../sync/sync';
+import { FILE_HOST, fileSupported } from '../sync/fileStore';
+import { chooseLocalMode, useSync } from '../sync/sync';
 import { ConfirmDialog, Dialog } from './Dialog';
 
 const COUNT_LABELS: Record<string, string> = { sections: 'מדורים', people: 'אנשים', billets: 'תקנים', assignments: 'שיבוצים', grants: 'מענקים', notes: 'הערות' };
@@ -37,7 +38,7 @@ export function DataDialog({ onClose }: { onClose: () => void }) {
 
           <section className="flex flex-col gap-2 border-t border-line pt-3">
             <h3 className="m-0 text-[15px] font-bold">שחזור מגיבוי</h3>
-            <p className="m-0 text-[13px] leading-relaxed text-muted">השחזור <strong>מחליף את כל הנתונים הנוכחיים</strong>. {mode === 'server' ? 'לפני כן השרת שומר עותק של המצב הנוכחי בתיקיית הגיבויים. ' : ''}הקובץ נבדק לפני השחזור.</p>
+            <p className="m-0 text-[13px] leading-relaxed text-muted">השחזור <strong>מחליף את כל הנתונים הנוכחיים</strong>. {mode === 'server' && server?.host !== FILE_HOST ? 'לפני כן השרת שומר עותק של המצב הנוכחי בתיקיית הגיבויים. ' : ''}{server?.host === FILE_HOST ? 'הקובץ המשותף מתעדכן אצל כולם — מומלץ להוריד גיבוי לפני כן. ' : ''}הקובץ נבדק לפני השחזור.</p>
             <label className="btn w-fit cursor-pointer">
               בחירת קובץ גיבוי
               <input type="file" accept=".json,application/json" className="sr-only" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
@@ -59,7 +60,7 @@ export function DataDialog({ onClose }: { onClose: () => void }) {
 
           {mode === 'server' && server && (
             <section className="flex flex-col gap-1 border-t border-line pt-3 text-[13px]">
-              <h3 className="m-0 text-[15px] font-bold">השרת</h3>
+              <h3 className="m-0 text-[15px] font-bold">{server.host === FILE_HOST ? 'קובץ הנתונים המשותף' : 'השרת'}</h3>
               <span>מחשב: <strong>{server.host}</strong> · תיקיית נתונים: <bdi className="font-mono text-xs">{server.dataDir}</bdi></span>
               <span>{server.backups} גיבויים אוטומטיים{server.lastBackupAt ? ` · האחרון ב־${new Date(server.lastBackupAt).toLocaleString('he-IL')}` : ''} · {server.auditCount} רישומים ביומן</span>
             </section>
@@ -67,6 +68,13 @@ export function DataDialog({ onClose }: { onClose: () => void }) {
 
           {mode === 'local' && (
             <section className="flex flex-col gap-2 border-t border-line pt-3">
+              {window.location.protocol === 'file:' && fileSupported() && (
+                <div className="flex flex-col gap-1 pb-2">
+                  <h3 className="m-0 text-[15px] font-bold">שיתוף נתונים</h3>
+                  <p className="m-0 text-[13px] text-muted">כרגע הנתונים נשמרים בדפדפן זה בלבד. כדי לעבוד על קובץ נתונים משותף בכונן הרשת:</p>
+                  <div><button type="button" className="btn" onClick={() => { chooseLocalMode(false); window.location.reload(); }}>מעבר לקובץ נתונים משותף</button></div>
+                </div>
+              )}
               <h3 className="m-0 text-[15px] font-bold">איפוס נתוני הדגמה</h3>
               <p className="m-0 text-[13px] text-muted">מצב מקומי: מוחק את השינויים בדפדפן זה ומחזיר את נתוני ההדגמה.</p>
               <div><button type="button" className="btn" onClick={() => setConfirmReset(true)}>איפוס נתוני הדגמה</button></div>

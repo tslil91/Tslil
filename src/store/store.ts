@@ -32,6 +32,7 @@ interface Actions {
   /** Self-declared user name used in the change log and notes. There is no login. */
   actor: string;
   setActor: (name: string) => void;
+  setUnitName: (name: string) => void;
   appendAudit: (entries: AuditDraft[]) => void;
   addNote: (personId: number, text: string) => void;
   deleteNote: (id: number) => void;
@@ -92,6 +93,7 @@ const creator: StateCreator<AppState, [['zustand/persist', unknown]]> = (set0, g
       audit: [],
       actor: '',
       setActor: (actor) => set({ actor: actor.trim().slice(0, 40) }),
+      setUnitName: (name) => set({ unitName: name.trim().slice(0, 40) || undefined }),
       appendAudit: (entries) => set((s) => {
         const at = new Date().toISOString();
         let id = nextId(s.audit);

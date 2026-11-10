@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { pickData } from '../domain/data';
+import { DEFAULT_UNIT_NAME, pickData } from '../domain/data';
 import { todayISO } from '../domain/dates';
 import { dataIssues } from '../logic/quality';
 import type { Route } from '../nav';
@@ -37,6 +37,9 @@ function NavLink({ route, label, icon, active, badge }: { route: Route; label: s
 export function Rail({ current }: { current: Route }) {
   const actor = useStore((s) => s.actor);
   const setActor = useStore((s) => s.setActor);
+  const unitName = useStore((s) => s.unitName) ?? DEFAULT_UNIT_NAME;
+  const setUnitName = useStore((s) => s.setUnitName);
+  const [unitDraft, setUnitDraft] = useState<string | null>(null);
   const { mode, status, unsaved } = useSync();
   const s = useStore();
   const errorCount = useMemo(() => dataIssues(pickData(s), todayISO()).filter((i) => i.severity === 'error').length, [s.sections, s.people, s.commanders, s.billets, s.assignments, s.grants, s.notes]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -48,7 +51,8 @@ export function Rail({ current }: { current: Route }) {
     : status === 'online' ? { c: 'bg-[#4ade80]', t: unsaved ? 'שומר…' : 'מחובר לשרת · הנתונים נשמרים' } : { c: 'bg-[#f87171]', t: 'אין חיבור לשרת' };
   return (
     <nav aria-label="ניווט ראשי" className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 bg-nav px-2 py-3.5 text-white">
-      <span className="pb-3 text-center text-[13px] font-bold">גדוד 51</span>
+      <button type="button" title="שינוי שם הארגון" aria-label={`שם הארגון: ${unitName}. שינוי`} onClick={() => setUnitDraft(unitName)}
+        className="mb-3 w-full break-words rounded px-0.5 text-center text-[13px] font-bold text-white hover:bg-white/10">{unitName}</button>
       {MAIN.map((m) => <NavLink key={m.route} {...m} active={group === m.route} badge={m.route === 'overview' ? errorCount : undefined} />)}
       <div className="my-2.5 h-px w-10 bg-white/20" />
       <NavLink route="simulator" label="סימולטור (כלי נוסף)" icon={<IconClock size={20} />} active={group === 'simulator'} />
@@ -58,6 +62,17 @@ export function Rail({ current }: { current: Route }) {
         className="flex h-10 w-10 items-center justify-center rounded-md text-white/80 hover:bg-white/10"><IconDatabase size={18} /></button>
       <button type="button" title={`משתמש: ${actor || 'לא הוגדר'} (לחיצה לשינוי)`} aria-label={`משתמש: ${actor || 'לא הוגדר'}. שינוי שם`} onClick={() => setWho(true)}
         className="flex h-10 w-10 flex-col items-center justify-center rounded-md text-white/80 hover:bg-white/10"><IconUser size={18} /></button>
+      {unitDraft !== null && (
+        <Dialog title="שם הארגון" width={420} onClose={() => setUnitDraft(null)}
+          footer={<><button type="button" className="btn h-[38px]" onClick={() => setUnitDraft(null)}>ביטול</button>
+            <button type="submit" form="unit-form" className="btn btn-primary h-[38px] px-5">שמירה</button></>}>
+          <form id="unit-form" className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); setUnitName(unitDraft); setUnitDraft(null); }}>
+            <label htmlFor="unit-name" className="label">שם הארגון (מוצג בתפריט)</label>
+            <input id="unit-name" className="input input-lg" value={unitDraft} maxLength={40} onChange={(e) => setUnitDraft(e.target.value)} />
+            <p className="m-0 text-xs text-muted">השינוי משותף לכל המשתמשים. שם ריק מחזיר את שם ברירת המחדל.</p>
+          </form>
+        </Dialog>
+      )}
       {data && <DataDialog onClose={() => setData(false)} />}
       {who && (
         <Dialog title="שינוי שם משתמש" width={420} onClose={() => setWho(false)} footer={<button type="button" className="btn h-[38px]" onClick={() => setWho(false)}>סגירה</button>}>
