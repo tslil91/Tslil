@@ -52,8 +52,15 @@ def main():
     torch.manual_seed(a.seed)
     rng = np.random.default_rng(a.seed)
 
-    train = sum((load(a, s, a.max_gathers)[0] for s in a.train), [])
-    valid, vdt = load(a, a.valid, 200)
+    train = []
+    for s in a.train:
+        g, vdt = load(a, s, a.max_gathers)
+        if s == a.valid:  # single-site run: gathers are in shot order, so contiguous blocks share no shots
+            n = len(g)
+            g, valid = g[:int(.7 * n)], g[int(.7 * n):int(.8 * n)]  # last 20% is left for evaluate.py --tail 0.2
+        train += g
+    if a.valid not in a.train:
+        valid, vdt = load(a, a.valid, 200)
     model = UNet()
     opt = torch.optim.AdamW(model.parameters(), a.lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.steps)

@@ -16,13 +16,14 @@ def main():
     p.add_argument("--bad-gathers", default="data/bad-gather-ids_combined.yaml")
     p.add_argument("--site", default="Halfmile")
     p.add_argument("--max-gathers", type=int, default=1000)
+    p.add_argument("--tail", type=float, default=1.0, help="evaluate only the last fraction of gathers (single-site split)")
     p.add_argument("--out", default="runs/eval")
     a = p.parse_args()
     ck = torch.load(a.model, weights_only=False)
     model = UNet(); model.load_state_dict(ck["model"])
     gathers, dt, nb = load_site_cached(a.data_dir, a.site, ck["args"]["samples"], ck["args"]["max_gathers"],
                                        a.bad_gathers, ck["args"]["seed"])
-    gathers = gathers[:a.max_gathers]
+    gathers = gathers[len(gathers) - int(a.tail * len(gathers)):][:a.max_gathers]
 
     pred = [predict_gather(model, g["x"]) for g in gathers]
     base = [sta_lta_pick(g["x"]) for g in gathers]
