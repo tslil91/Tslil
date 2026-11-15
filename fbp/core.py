@@ -124,6 +124,13 @@ def predict_gather(model, x, batch_traces=1024):
     return torch.cat(out).numpy()
 
 
+def smooth_picks(p, win=9, thr=10):
+    """Replace a pick by the median of its `win` neighbouring traces if it deviates by more than `thr` samples."""
+    p = np.asarray(p)
+    med = np.median(np.lib.stride_tricks.sliding_window_view(np.pad(p, win // 2, mode="edge"), win), 1)
+    return np.where(np.abs(p - med) > thr, med, p).astype(p.dtype)
+
+
 def sta_lta_pick(x, sta=5, lta=40):
     """Classical baseline: argmax of STA/LTA energy ratio per trace."""
     e = np.asarray(x, np.float32) ** 2

@@ -6,7 +6,7 @@ import torch
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from core import load_site_cached, UNet, predict_gather, sta_lta_pick, metrics
+from core import load_site_cached, UNet, predict_gather, smooth_picks, sta_lta_pick, metrics
 
 
 def main():
@@ -26,10 +26,12 @@ def main():
     gathers = gathers[len(gathers) - int(a.tail * len(gathers)):][:a.max_gathers]
 
     pred = [predict_gather(model, g["x"]) for g in gathers]
+    smooth = [smooth_picks(q) for q in pred]
     base = [sta_lta_pick(g["x"]) for g in gathers]
     y = np.concatenate([g["y"] for g in gathers])
     res = {"site": a.site, "gathers": len(gathers), "dt_ms": dt, "picks_beyond_window_dropped": nb,
-           "unet": metrics(np.concatenate(pred), y, dt), "sta_lta": metrics(np.concatenate(base), y, dt)}
+           "unet": metrics(np.concatenate(pred), y, dt),
+           "unet_median_smoothed": metrics(np.concatenate(smooth), y, dt), "sta_lta": metrics(np.concatenate(base), y, dt)}
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     (out / f"metrics_{a.site}.json").write_text(json.dumps(res, indent=1))
     print(json.dumps(res, indent=1))
@@ -42,7 +44,7 @@ def main():
         g = gathers[i]
         ax[k + 1].imshow(g["x"].astype(np.float32).T, aspect="auto", cmap="gray", vmin=-0.3, vmax=0.3)
         lab = np.where(g["y"] >= 0, g["y"], np.nan)
-        ax[k + 1].plot(lab, "g.", ms=3, label="label"); ax[k + 1].plot(pred[i], "r.", ms=2, label="U-Net")
+        ax[k + 1].plot(lab, "g.", ms=3, label="label"); ax[k + 1].plot(smooth[i], "r.", ms=2, label="U-Net (smoothed)")
         ax[k + 1].set(title=f"gather {i}", xlabel="trace", ylabel="sample"); ax[k + 1].legend()
     fig.tight_layout(); fig.savefig(out / f"examples_{a.site}.png", dpi=90)
 

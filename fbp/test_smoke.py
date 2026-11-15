@@ -1,4 +1,5 @@
 """Self-check on a synthetic survey with the HardPicks HDF5 schema: loader, training, evaluation."""
+import sys, subprocess; sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent))
 import subprocess, sys, json, tempfile
 from pathlib import Path
 import numpy as np, h5py
@@ -31,4 +32,8 @@ with tempfile.TemporaryDirectory() as d:
     r = json.loads(Path(f"{d}/metrics_Halfmile.json").read_text())
     assert r["gathers"] == shots * lines, r
     assert r["unet"]["HR@3px"] > 0.9, r["unet"]
+    from core import smooth_picks
+    q = np.array([50, 51, 52, 300, 54, 55, 56, 57, 58, 59])  # one outlier
+    assert (smooth_picks(q) == [50, 51, 52, 54, 54, 55, 56, 57, 58, 59]).all(), smooth_picks(q)
+    assert r["unet_median_smoothed"]["HR@3px"] >= r["unet"]["HR@3px"] - 0.02
     print("SMOKE TEST OK", r["unet"]["HR@1px"], r["sta_lta"]["HR@1px"])
