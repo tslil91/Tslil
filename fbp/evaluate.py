@@ -17,6 +17,7 @@ def main():
     p.add_argument("--site", default="Halfmile")
     p.add_argument("--max-gathers", type=int, default=1000)
     p.add_argument("--tail", type=float, default=1.0, help="evaluate only the last fraction of gathers (single-site split)")
+    p.add_argument("--tta", action="store_true", help="test-time augmentation (reversed + polarity-flipped views)")
     p.add_argument("--out", default="runs/eval")
     a = p.parse_args()
     ck = torch.load(a.model, weights_only=False)
@@ -25,7 +26,7 @@ def main():
                                        a.bad_gathers, ck["args"]["seed"])
     gathers = gathers[len(gathers) - int(a.tail * len(gathers)):][:a.max_gathers]
 
-    pred = [predict_gather(model, g["x"]) for g in gathers]
+    pred = [predict_gather(model, g["x"], tta=a.tta) for g in gathers]
     smooth = [smooth_picks(q) for q in pred]
     base = [sta_lta_pick(g["x"]) for g in gathers]
     y = np.concatenate([g["y"] for g in gathers])

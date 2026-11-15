@@ -116,12 +116,15 @@ class UNet(nn.Module):
 
 
 @torch.no_grad()
-def predict_gather(model, x, batch_traces=1024):
-    """x: [N,T] array -> predicted pick index per trace."""
+def predict_gather(model, x, batch_traces=1024, tta=False):
+    """x: [N,T] array -> predicted pick index per trace. tta: average over reversed + polarity-flipped copies."""
     model.eval()
     t = torch.from_numpy(np.asarray(x, np.float32))
-    out = [model(t[i:i + batch_traces][None]).argmax(-1)[0] for i in range(0, len(t), batch_traces)]
-    return torch.cat(out).numpy()
+    prob = lambda a: torch.cat([model(a[i:i + batch_traces][None]).softmax(-1)[0] for i in range(0, len(a), batch_traces)])
+    p = prob(t)
+    if tta:  # shortcut: 3 views only, more views give diminishing returns
+        p = (p + prob(t.flip(0)).flip(0) + prob(-t)) / 3
+    return p.argmax(-1).numpy()
 
 
 def smooth_picks(p, win=9, thr=10):

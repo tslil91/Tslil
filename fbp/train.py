@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
 from core import load_site_cached, UNet, predict_gather, metrics
 
 
@@ -13,6 +14,14 @@ def load(args, site, max_gathers):
     print(f"{site}: {len(g)} gathers, {sum(len(x['y']) for x in g)} traces, dt={dt}ms, "
           f"{nb} picks beyond {args.samples} samples dropped", flush=True)
     return g, dt
+
+
+def soft_ce(logits, y, sigma):
+    """Cross-entropy against a Gaussian bump around the label; unlabeled traces (-1) are ignored."""
+    m = y >= 0
+    lg = logits[m]
+    tgt = torch.exp(-0.5 * ((torch.arange(lg.shape[-1])[None] - y[m][:, None]) / sigma) ** 2)
+    return -((tgt / tgt.sum(-1, keepdim=True)) * F.log_softmax(lg, -1)).sum(-1).mean()
 
 
 def batch(gathers, rng, bs, width):
@@ -47,6 +56,8 @@ def main():
     p.add_argument("--width", type=int, default=64, help="traces per training patch")
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--label-sigma", type=float, default=0, help="Gaussian soft-label width in samples (0 = hard labels)")
+    p.add_argument("--ema", type=float, default=0, help="EMA decay of the weights, e.g. 0.999 (0 = off)")
     p.add_argument("--out", default="runs/model.pt")
     a = p.parse_args()
     torch.manual_seed(a.seed)
@@ -63,6 +74,7 @@ def main():
         valid, vdt = load(a, a.valid, 200)
     model = UNet()
     opt = torch.optim.AdamW(model.parameters(), a.lr, weight_decay=1e-4)
+    ema = AveragedModel(model, multi_avg_fn=get_ema_multi_avg_fn(a.ema), use_buffers=True) if a.ema else None
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.steps)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     best, t0, log = -1, time.time(), []
@@ -70,17 +82,20 @@ def main():
         model.train()
         x, y = batch(train, rng, a.batch, a.width)
         logits = model(x)  # [B, W, T]: per trace, a distribution over the pick sample
-        loss = F.cross_entropy(logits.flatten(0, 1), y.flatten(), ignore_index=-1)
+        loss = soft_ce(logits, y, a.label_sigma) if a.label_sigma else F.cross_entropy(
+            logits.flatten(0, 1), y.flatten(), ignore_index=-1)
         opt.zero_grad(); loss.backward(); opt.step(); sched.step()
+        if ema: ema.update_parameters(model)
         if step % 500 == 0 or step == a.steps:
-            pr = np.concatenate([predict_gather(model, g["x"]) for g in valid])
+            ev = ema.module if ema else model
+            pr = np.concatenate([predict_gather(ev, g["x"]) for g in valid])
             m = metrics(pr, np.concatenate([g["y"] for g in valid]), vdt)
             log.append(dict(step=step, loss=loss.item(), **m))
             print(f"step {step} loss {loss.item():.3f} valid HR@1 {m['HR@1px']:.3f} HR@5 {m['HR@5px']:.3f} "
                   f"MAE {m['MAE_px']:.2f}px  {time.time() - t0:.0f}s", flush=True)
             if m["HR@1px"] > best:
                 best = m["HR@1px"]
-                torch.save(dict(model=model.state_dict(), args=vars(a)), a.out)
+                torch.save(dict(model=ev.state_dict(), args=vars(a)), a.out)
     Path(a.out).with_suffix(".log.json").write_text(json.dumps(log, indent=1))
 
 
