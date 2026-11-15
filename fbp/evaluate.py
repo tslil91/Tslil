@@ -6,7 +6,7 @@ import torch
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from core import SITES, load_site, bad_gather_keys, UNet, predict_gather, sta_lta_pick, metrics
+from core import load_site_cached, UNet, predict_gather, sta_lta_pick, metrics
 
 
 def main():
@@ -20,9 +20,9 @@ def main():
     a = p.parse_args()
     ck = torch.load(a.model, weights_only=False)
     model = UNet(); model.load_state_dict(ck["model"])
-    f, field, digits = SITES[a.site]
-    bad = bad_gather_keys(a.bad_gathers, a.site, digits) if a.bad_gathers else ()
-    gathers, dt, nb = load_site(Path(a.data_dir) / f, field, digits, ck["args"]["samples"], a.max_gathers, bad, seed=1)
+    gathers, dt, nb = load_site_cached(a.data_dir, a.site, ck["args"]["samples"], ck["args"]["max_gathers"],
+                                       a.bad_gathers, ck["args"]["seed"])
+    gathers = gathers[:a.max_gathers]
 
     pred = [predict_gather(model, g["x"]) for g in gathers]
     base = [sta_lta_pick(g["x"]) for g in gathers]

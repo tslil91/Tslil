@@ -4,13 +4,12 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
-from core import SITES, load_site, bad_gather_keys, UNet, predict_gather, metrics
+from core import load_site_cached, UNet, predict_gather, metrics
 
 
 def load(args, site, max_gathers):
-    f, field, digits = SITES[site]
-    bad = bad_gather_keys(args.bad_gathers, site, digits) if args.bad_gathers else ()
-    g, dt, nb = load_site(Path(args.data_dir) / f, field, digits, args.samples, max_gathers, bad, args.seed)
+    g, dt, nb = load_site_cached(args.data_dir, site, args.samples, args.max_gathers, args.bad_gathers, args.seed)
+    g = g[:max_gathers]
     print(f"{site}: {len(g)} gathers, {sum(len(x['y']) for x in g)} traces, dt={dt}ms, "
           f"{nb} picks beyond {args.samples} samples dropped", flush=True)
     return g, dt

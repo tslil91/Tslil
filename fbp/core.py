@@ -60,6 +60,27 @@ def load_site(path, fb_field, line_digits, n_samples=512, max_gathers=None,
     return [dict(x=x[pos[g]], y=y[g]) for g in groups], dt_ms, n_beyond
 
 
+def load_site_cached(data_dir, site, samples=512, n=3000, bad_yaml="", seed=0):
+    """load_site on a random subset of n gathers, cached as <data_dir>/cache_<site>.npz.
+
+    Lets the multi-GB HDF5 be deleted after the first run. Cache is keyed by site only: delete it if
+    you change samples/n/seed.
+    """
+    from pathlib import Path
+    d = Path(data_dir); cache = d / f"cache_{site}.npz"
+    if not cache.exists():
+        f, field, digits = SITES[site]
+        bad = bad_gather_keys(bad_yaml, site, digits) if bad_yaml else ()
+        g, dt, nb = load_site(d / f, field, digits, samples, n, bad, seed)
+        lens = np.array([len(x["y"]) for x in g])
+        np.savez(cache, x=np.concatenate([x["x"] for x in g]), y=np.concatenate([x["y"] for x in g]),
+                 lens=lens, dt=dt, nb=nb)
+    z = np.load(cache)
+    x, y, lens = z["x"], z["y"], z["lens"]  # NpzFile re-reads on every access, so load once
+    ends = np.cumsum(lens)
+    return ([dict(x=x[e - n:e], y=y[e - n:e]) for e, n in zip(ends, lens)], float(z["dt"]), int(z["nb"]))
+
+
 def bad_gather_keys(yaml_path, site, line_digits):
     import yaml
     d = (yaml.safe_load(open(yaml_path)) or {}).get(site) or {}
