@@ -44,4 +44,9 @@ with tempfile.TemporaryDirectory() as d:
     from core import metrics
     mm = metrics(np.array([10, -1, 30]), np.array([10, 20, 31]), 1.0)  # one rejected pick
     assert mm["coverage"] == 2 / 3 and mm["HR@1px"] == 1.0 and mm["n_traces"] == 2, mm
+    from locate import locate
+    r = np.random.default_rng(1); RX, RY = r.uniform(0, 2000, 300), r.uniform(0, 2000, 300)
+    tt = 40 + np.hypot(RX - 700, RY - 1200) / 5.5 + r.normal(0, 1, 300); tt[:15] += 200  # 5% wild picks
+    sol = locate(RX, RY, tt, 4.0)
+    assert np.hypot(sol[0] - 700, sol[1] - 1200) < 5 and abs(sol[3] - 5.5) < 0.1, sol
     print("SMOKE TEST OK", r["unet"]["HR@1px"], r["sta_lta"]["HR@1px"])
