@@ -23,7 +23,7 @@ def main():
     ck = torch.load(a.model, weights_only=False)
     model = UNet(); model.load_state_dict(ck["model"])
     gathers, dt, nb = load_site_cached(a.data_dir, a.site, ck["args"]["samples"], ck["args"]["max_gathers"],
-                                       a.bad_gathers, ck["args"]["seed"])
+                                       a.bad_gathers, ck["args"]["seed"], ck["args"].get("norm", "max"))
     gathers = gathers[len(gathers) - int(a.tail * len(gathers)):][:a.max_gathers]
 
     pred = [predict_gather(model, g["x"], tta=a.tta) for g in gathers]

@@ -36,4 +36,9 @@ with tempfile.TemporaryDirectory() as d:
     q = np.array([50, 51, 52, 300, 54, 55, 56, 57, 58, 59])  # one outlier
     assert (smooth_picks(q) == [50, 51, 52, 54, 54, 55, 56, 57, 58, 59]).all(), smooth_picks(q)
     assert r["unet_median_smoothed"]["HR@3px"] >= r["unet"]["HR@3px"] - 0.02
+    from core import robust_clip
+    tr = np.r_[np.zeros(10), np.sin(np.arange(90) / 3.0)][None] * 0.01
+    tr[0, 5] = 100.0  # noise spike
+    out = robust_clip(tr).astype(np.float32)
+    assert np.abs(out[0, 10:]).max() > 0.01, "signal must survive a spike"  # max-abs would leave ~1e-4
     print("SMOKE TEST OK", r["unet"]["HR@1px"], r["sta_lta"]["HR@1px"])

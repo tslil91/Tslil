@@ -9,7 +9,7 @@ from core import load_site_cached, UNet, predict_gather, metrics
 
 
 def load(args, site, max_gathers):
-    g, dt, nb = load_site_cached(args.data_dir, site, args.samples, args.max_gathers, args.bad_gathers, args.seed)
+    g, dt, nb = load_site_cached(args.data_dir, site, args.samples, args.max_gathers, args.bad_gathers, args.seed, args.norm)
     g = g[:max_gathers]
     print(f"{site}: {len(g)} gathers, {sum(len(x['y']) for x in g)} traces, dt={dt}ms, "
           f"{nb} picks beyond {args.samples} samples dropped", flush=True)
@@ -58,6 +58,7 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--label-sigma", type=float, default=0, help="Gaussian soft-label width in samples (0 = hard labels)")
     p.add_argument("--ema", type=float, default=0, help="EMA decay of the weights, e.g. 0.999 (0 = off)")
+    p.add_argument("--norm", default="max", choices=["max", "robust"], help="per-trace normalisation")
     p.add_argument("--out", default="runs/model.pt")
     a = p.parse_args()
     torch.manual_seed(a.seed)

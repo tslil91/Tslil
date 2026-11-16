@@ -60,7 +60,18 @@ def load_site(path, fb_field, line_digits, n_samples=512, max_gathers=None,
     return [dict(x=x[pos[g]], y=y[g]) for g in groups], dt_ms, n_beyond
 
 
-def load_site_cached(data_dir, site, samples=512, n=3000, bad_yaml="", seed=0):
+def robust_clip(x, c=2.0, q=95):
+    """Scale each trace by its q-th percentile |amplitude|, clip at +-c of that.
+
+    Spikes covering < (100-q)% of samples can't set the scale, unlike max-abs or RMS. Scale-invariant,
+    so applying it to the max-abs-normalised cache equals applying it to raw data.
+    """
+    x = x.astype(np.float32)
+    x /= np.percentile(np.abs(x), q, axis=1, keepdims=True) + 1e-12
+    return (np.clip(x, -c, c) / c).astype(np.float16)
+
+
+def load_site_cached(data_dir, site, samples=512, n=3000, bad_yaml="", seed=0, norm="max"):
     """load_site on a random subset of n gathers, cached as <data_dir>/cache_<site>.npz.
 
     Lets the multi-GB HDF5 be deleted after the first run. Cache is keyed by site only: delete it if
@@ -77,6 +88,8 @@ def load_site_cached(data_dir, site, samples=512, n=3000, bad_yaml="", seed=0):
                  lens=lens, dt=dt, nb=nb)
     z = np.load(cache)
     x, y, lens = z["x"], z["y"], z["lens"]  # NpzFile re-reads on every access, so load once
+    if norm == "robust":
+        x = np.concatenate([robust_clip(x[i:i + 100_000]) for i in range(0, len(x), 100_000)])  # chunks bound RAM
     ends = np.cumsum(lens)
     return ([dict(x=x[e - n:e], y=y[e - n:e]) for e, n in zip(ends, lens)], float(z["dt"]), int(z["nb"]))
 
