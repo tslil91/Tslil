@@ -129,15 +129,24 @@ class UNet(nn.Module):
 
 
 @torch.no_grad()
-def predict_gather(model, x, batch_traces=1024, tta=False):
-    """x: [N,T] array -> predicted pick index per trace. tta: average over reversed + polarity-flipped copies."""
+def predict_gather(model, x, batch_traces=1024, tta=False, return_conf=False):
+    """x: [N,T] array -> predicted pick index per trace. tta: average over reversed + polarity-flipped copies.
+
+    return_conf: also return each pick's confidence = probability mass within +-2 samples of the pick
+    (flat, low mass on traces with no clear arrival).
+    """
     model.eval()
     t = torch.from_numpy(np.asarray(x, np.float32))
     prob = lambda a: torch.cat([model(a[i:i + batch_traces][None]).softmax(-1)[0] for i in range(0, len(a), batch_traces)])
     p = prob(t)
     if tta:  # shortcut: 3 views only, more views give diminishing returns
         p = (p + prob(t.flip(0)).flip(0) + prob(-t)) / 3
-    return p.argmax(-1).numpy()
+    idx = p.argmax(-1)
+    if not return_conf:
+        return idx.numpy()
+    win = idx[:, None] + torch.arange(-2, 3)[None]
+    conf = p.gather(1, win.clamp(0, p.shape[1] - 1)).sum(1)  # edge clamp double-counts slightly, harmless
+    return idx.numpy(), conf.numpy()
 
 
 def smooth_picks(p, win=9, thr=10):
@@ -159,11 +168,15 @@ def sta_lta_pick(x, sta=5, lta=40):
 
 
 def metrics(pred, true, dt_ms):
-    """Benchmark metrics from the HardPicks paper: hit rates within k samples, MAE/RMSE/MBE."""
-    m = true >= 0
+    """Benchmark metrics from the HardPicks paper: hit rates within k samples, MAE/RMSE/MBE.
+
+    Picks of -1 (rejected) are left out of the error metrics; coverage = share of labelled traces still picked.
+    """
+    cov = float((pred[true >= 0] >= 0).mean())
+    m = (true >= 0) & (pred >= 0)
     err = (pred[m] - true[m]).astype(np.float64)
     a = np.abs(err)
     r = {f"HR@{k}px": float((a <= k).mean()) for k in (1, 3, 5, 7, 9)}
     r.update(MAE_px=a.mean(), RMSE_px=np.sqrt((err ** 2).mean()), MBE_px=err.mean(),
-             MAE_ms=a.mean() * dt_ms, RMSE_ms=np.sqrt((err ** 2).mean()) * dt_ms, n_traces=int(m.sum()))
+             MAE_ms=a.mean() * dt_ms, RMSE_ms=np.sqrt((err ** 2).mean()) * dt_ms, n_traces=int(m.sum()), coverage=cov)
     return {k: float(v) for k, v in r.items()}

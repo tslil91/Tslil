@@ -41,4 +41,7 @@ with tempfile.TemporaryDirectory() as d:
     tr[0, 5] = 100.0  # noise spike
     out = robust_clip(tr).astype(np.float32)
     assert np.abs(out[0, 10:]).max() > 0.01, "signal must survive a spike"  # max-abs would leave ~1e-4
+    from core import metrics
+    mm = metrics(np.array([10, -1, 30]), np.array([10, 20, 31]), 1.0)  # one rejected pick
+    assert mm["coverage"] == 2 / 3 and mm["HR@1px"] == 1.0 and mm["n_traces"] == 2, mm
     print("SMOKE TEST OK", r["unet"]["HR@1px"], r["sta_lta"]["HR@1px"])
